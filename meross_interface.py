@@ -1,9 +1,9 @@
 # This file will be moved later on to its correct place
+from meross_iot.model.credentials import MerossCloudCreds
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
-from flask import session
-from meross_iot.model.credentials import MerossCloudCreds
 from dotenv import load_dotenv
+from flask import session
 import os
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.secrets', '.env')

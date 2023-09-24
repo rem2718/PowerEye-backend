@@ -25,3 +25,6 @@
 
 def notify(user, title, body):
     pass
+
+def update_tokens():
+    pass

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, session, request
 from dotenv import load_dotenv
 import asyncio
 import json
+import time
 import meross
 import os
 
@@ -22,15 +23,16 @@ def hello_world():
 #     async_task_result = await meross.verify_credentials()
 #     return jsonify({"message": async_task_result})
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET'])
 def login():
-    email = request.json['email']
-    password = request.json['password']
-    asyncio.run(meross.verify_credentials(email, password))
+    # email = request.json['email']
+    # password = request.json['password']
+    # asyncio.run(meross.verify_credentials(email, password))
     return 'login is done!'
 
 @app.route('/home')
 def home():
+    time.sleep(0.01)
     return jsonify({"message": asyncio.run(meross.get_status())})
 
 

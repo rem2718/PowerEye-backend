@@ -1,87 +1,79 @@
-import tinytuya
-import pymongo
-import os
 from datetime import datetime, timedelta
-from bson import ObjectId
 from dotenv import load_dotenv
-
-dotenv_path = os.path.join('.secrets', '.env')
-load_dotenv(dotenv_path)
-
-URL = os.getenv("DB_URL")
-API_KEY = os.getenv("API_KEY")
-API_SECRET = os.getenv("API_SECRET")
-API_DEVICE = [os.getenv("API_DEVICE_10"), os.getenv("API_DEVICE_20"), os.getenv("API_DEVICE_30")]
-INTERVAL = timedelta(seconds=60)
-timestamp = datetime.now()
-
+import tinytuya
+import logging
+import os
+class Tuya():
+    load_dotenv(os.path.join('.secrets', '.env'))
+    API_KEY = os.getenv('API_KEY')
+    API_SECRET = os.getenv('API_SECRET')
+    db = None
     
-dev_map = {
-    'fridge_10': '64d160d293d44252699aa218',
-    'charger_10': '64d1609b93d44252699aa217',
-    'food_processor_10': '64d15f9393d44252699aa215',
-    'tv_10': '64d1605493d44252699aa216',
+    def __init__(self, user_id, dev1):
+        self.user_id = user_id
+        self.app_map = None
+        self.cloud = self._login(dev1)
+        self.ts = datetime.now()
+        
+    @classmethod    
+    def set_db(cls, db):
+        cls.db = db
+        
+    def _login(self, dev1):
+        cloud = tinytuya.Cloud(apiRegion="eu", apiKey=Tuya.API_KEY,
+                apiSecret=Tuya.API_SECRET, apiDeviceID=dev1)
+        return cloud
     
-    'fridge_11': '64d161e193d44252699aa219',
-    'lamp_10': '64d161fd93d44252699aa21a',
-    'office_strip_10': '64d1629393d44252699aa21b',
-    'tv_11': '64d162bf93d44252699aa21c',
+    def _app_map(self, appliances):
+        map = {}
+        for app in appliances:
+            if not app['is_deleted']:
+                map[app['meross_id']] = (str(app['_id']), app['energy'])
+        return map 
+         
+    def _get_appliances(self, id):
+        appliances = Tuya.db.get_doc('Users', {'_id': id}, 
+                        {'appliances._id': 1, 'appliances.meross_id': 1, 
+                         'appliances.energy': 1, 'appliances.is_deleted': 1})
+        
+        return self._app_map(appliances['appliances'])
     
-    'fridge_20': '64d1646b93d44252699aa221',
-    'coffee_maker_20': '64d1641a93d44252699aa220',
-    'lamp_20': '64d1648093d44252699aa222',
-    'charger_20': '64d162ff93d44252699aa21d',
-    'fan_20': '64d1638293d44252699aa21e',
-    'hair_dryer_20': '64d163dd93d44252699aa21f',
+    def _get_status(self, dev):
+        result = self.cloud.getstatus(dev['id'])
+        pow = (result['result'][4]['value']) /10.0
+        on_off = result['result'][0]['value']
+        return on_off, pow
     
-    'cooler_30': '64d1656693d44252699aa225',
-    'toaster_30': '64d1685693d44252699aa22b',
-    'charger_30': '64d1682993d44252699aa22a',
-    'lamp_30': '64d1659d93d44252699aa226',
-    'air_fryer_30': '64d1650b93d44252699aa223',
-    'camera_30': '64d167a193d44252699aa228',
-    'speaker_30': '64d167e593d44252699aa229',
-    'tv_30': '64d1687493d44252699aa22c',
-    'office_strip_30': '64d165e693d44252699aa227',
-}
-ids = ['64d1548894895e0b4c1bc07f','64d154d494895e0b4c1bc081','64d154bc94895e0b4c1bc080']
-
-def get_pow(user):
-    doc = {}
-    cloud = tinytuya.Cloud(
-            apiRegion="eu", 
-            apiKey=API_KEY, 
-            apiSecret=API_SECRET, 
-            apiDeviceID=API_DEVICE[user])
+    def _to_energy(self, prev_energy, power):
+        return prev_energy + (power * 1/60) / 1000
     
-    devices = cloud.getdevices() 
-    doc['user'] = ObjectId(ids[user])
-    try:
+    def run(self): 
+        doc = {}
+        updates = []
+        self.app_map = self._get_appliances(self.user_id)
+        devices = self.cloud.getdevices()
         for dev in devices:
-            connected = cloud.getconnectstatus(dev['id'])
-            if connected:
-                result = cloud.getstatus(dev['id'])
-                state = result['result'][4]['value']
-                doc[dev_map[dev['name']]] = state/10.0
+            try:
+                id = self.app_map[dev['id']][0]  
+            except:
+                continue
+            connection_status = self.cloud.getconnectstatus(dev['id'])
+            if connection_status:
+                on_off, pow = self._get_status(dev)
+                doc[id] = pow
+                updates.append((id, {'status': on_off,
+                                    'connection_status': connection_status,
+                                    'energy': self._to_energy(self.app_map[dev['id']][1], doc[id])}))
             else:
-                doc[dev_map[dev['name']]] = None
-        print(doc)
-                
-    except Exception as e:
-        print(f'tuya error: {repr(e)}') 
+                doc[id] = None
+                updates.append((id, {'connection_status': connection_status}))
+                name = dev['name']
+                print(f'device {name} is offline')
+                # TO-DO: notify()       
+        doc['user'] = self.user_id
+        doc['timestamp'] = self.ts 
+        Tuya.db.insert_doc('Test', doc)
+        Tuya.db.update_appliances('Users', str(self.user_id), updates) 
+        logging.info(f'meross: {self.ts} done')  
+        self.ts += timedelta(minutes=1) 
         
-            
-# def insert_into_db():
-#     client = pymongo.MongoClient(URL)
-#     db = client['hemsproject']
-#     collection = db['pp']
-#     doc['timestamp'] = timestamp
-    
-#     try:    
-#         collection.insert_one(doc)   
-#     except Exception as e:
-#         print(f'mongodb error: {repr(e)}') 
-        
-#     print(f'{doc["timestamp"]}: done')
-#     doc.clear()
-#     timestamp += INTERVAL
