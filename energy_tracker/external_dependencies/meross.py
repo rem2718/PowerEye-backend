@@ -27,7 +27,7 @@ class Meross():
         try:
             self.client = await MerossHttpClient.async_from_user_password(email=self.email, password=self.password)
             self.manager = MerossManager(http_client=self.client)
-        except Exception as e:
+        except:
             # TO-DO: wrong creds notify()
             logging.error('meross login error', exc_info=True)
         
@@ -35,7 +35,7 @@ class Meross():
         try:
             self.manager.close()
             await self.client.async_logout()  
-        except Exception as e:
+        except:
             logging.error('meross logout error', exc_info=True)
             
         await self.login()  
@@ -72,7 +72,7 @@ class Meross():
                 # TO-DO: notify()
                 print(f'device {dev.name} is offline')
             return on_off, connection_status
-        except Exception as e:
+        except Exception:
             logging.error('status error', exc_info=True)
             return None, None         
 
@@ -80,7 +80,7 @@ class Meross():
         try:
             reading = await dev.async_get_instant_metrics(timeout=5)
             return reading.power
-        except Exception as e:
+        except:
             logging.error('power error', exc_info=True)
             return None
 
@@ -111,7 +111,7 @@ class Meross():
                 updates.append((app, {'connection_status': False})) 
                 # TO-DO: notify()
                 # get dev name
-        except Exception as e:
+        except:
             # TO-DO: wrong creds
             logging.error('meross error', exc_info=True)
             await self._update_creds() 

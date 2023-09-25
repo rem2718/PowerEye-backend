@@ -3,9 +3,9 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from datetime import datetime
-from master import Master
+from energy_tracker.Tasks.master import Master
 from energy import Energy
-from mongo import Mongo
+from energy_tracker.external_dependencies.mongo import Mongo
 import multiprocessing
 import asyncio
 import os

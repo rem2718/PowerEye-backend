@@ -1,5 +1,5 @@
-from meross import Meross
-from tuya import Tuya
+from energy_tracker.external_dependencies.meross import Meross
+from energy_tracker.external_dependencies.tuya import Tuya
 import logging
 
 class Master():
