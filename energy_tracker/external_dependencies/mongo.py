@@ -1,15 +1,18 @@
 # from pymongo.operations import UpdateOne
 from pymongo import MongoClient
+from interfaces.db import DB
 from bson import ObjectId
 import logging
 
-class Mongo():
+class Mongo(DB):
+    
     def __init__(self, URL, database):
         try:
             client = MongoClient(URL)
             self.db = client[database]
-        except Exception as e:
+        except:
             logging.error('mongodb init error', exc_info=True)
+
 
     def get_doc(self, collection, query={}, projection={}):
         try: 
@@ -19,6 +22,7 @@ class Mongo():
             logging.error('mongodb read error', exc_info=True) 
             return False
         
+        
     def get_docs(self, collection, query={}, projection={}):
         try: 
             docs = self.db[collection].find(query, projection)
@@ -27,17 +31,20 @@ class Mongo():
             logging.error('mongodb read all error', exc_info=True) 
             return False
 
+
     def insert_doc(self, collection ,doc):
         try:
             self.db[collection].insert_one(doc)  
         except:
             logging.error('mongodb insert error', exc_info=True) 
+      
             
     def insert_docs(self, collection ,docs):
         try:
             self.db[collection].insert_many(docs)  
         except Exception as e:
             logging.error('mongodb insert all error', exc_info=True)
+     
             
     def update_appliances(self, collection, id, updates):
         try:
@@ -52,6 +59,7 @@ class Mongo():
                 
         except:
             logging.error('mongodb update appliances error', exc_info=True) 
+
 
     def update_all(self, collection, field, value):
         try:

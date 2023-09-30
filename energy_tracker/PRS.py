@@ -35,6 +35,7 @@ class PRS():
     
     @classmethod
     def reset_goal(cls,):
+        # reset flags monthly
         pass
 
     @classmethod

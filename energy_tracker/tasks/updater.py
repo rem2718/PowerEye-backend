@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
+from interfaces.task import Task
 from PRS import PRS
-# rename this class plz
-# TO-DO: check sync, starting the server, redisAI, models collection, timestamp for energy transfer
-class Updater():
+# TO-DO: check sync, starting the server, timestamp for energy transfer
+class Updater(Task):
     db = None
     DAY = timedelta(days=1)
     
@@ -10,15 +10,20 @@ class Updater():
         self.user_id = user_id
         self.ts = datetime.now()
 
-    @classmethod    
-    def set_db(cls, db):
+
+    @classmethod
+    def set_deps(cls, db, fcm):
         cls.db = db
+        cls.fcm = fcm
+        
+        
     def update_month_energy(self, appliances, month_energy):
         # if day is one set to zero
         # loop over appliances energy
         # return sum
         # update month energy
         pass 
+    
     
     def run(self):
         docs = []
@@ -31,6 +36,7 @@ class Updater():
             for app in user['appliances']:
                 doc[str(app['_id'])] = app['energy']
             docs.append(doc)
+            
         self.update_month_energy(appliances, month_energy) 
         self.db.update_all('Users', 'appliances.$[].energy', 0)
         # get power (specific period)

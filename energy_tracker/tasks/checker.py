@@ -1,16 +1,19 @@
+from interfaces.task import Task
 from PRS import PRS 
 class Checker():
-    db = None
     
     def __init__(self, user_id):
-        self.user_id
+        self.user_id = user_id
         self.goal_flags = [False * 8] # 25% - 200%
         self.phantom_ts = {}
         self.baseline_flags = {}
     
-    @classmethod    
-    def set_db(cls, db):
+    
+    @classmethod
+    def set_deps(cls, db, fcm):
         cls.db = db
+        cls.fcm = fcm
+      
         
     def sum_energy(self, appliances):
         # loop over appliances energy
@@ -32,4 +35,5 @@ class Checker():
         # if flag = true continue
         # if baseline = -1 continue
         self.baseline_flags = PRS.check_baseline(energy, baseline, app_name)
+        check_peak()
         

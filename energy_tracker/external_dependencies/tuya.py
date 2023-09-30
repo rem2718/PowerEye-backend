@@ -1,28 +1,31 @@
 from datetime import datetime, timedelta
+from interfaces.task import Task
 from dotenv import load_dotenv
 import tinytuya
 import logging
 import os
-class Tuya():
+class Tuya(Task):
     load_dotenv(os.path.join('.secrets', '.env'))
     API_KEY = os.getenv('API_KEY')
     API_SECRET = os.getenv('API_SECRET')
-    db = None
-    
+
     def __init__(self, user_id, dev1):
         self.user_id = user_id
-        self.app_map = None
         self.cloud = self._login(dev1)
         self.ts = datetime.now()
+    
         
-    @classmethod    
-    def set_db(cls, db):
+    @classmethod
+    def set_deps(cls, db, fcm):
         cls.db = db
+        cls.fcm = fcm
+        
         
     def _login(self, dev1):
         cloud = tinytuya.Cloud(apiRegion="eu", apiKey=Tuya.API_KEY,
                 apiSecret=Tuya.API_SECRET, apiDeviceID=dev1)
         return cloud
+    
     
     def _app_map(self, appliances):
         map = {}
@@ -30,6 +33,7 @@ class Tuya():
             if not app['is_deleted']:
                 map[app['meross_id']] = (str(app['_id']), app['energy'])
         return map 
+      
          
     def _get_appliances(self, id):
         appliances = Tuya.db.get_doc('Users', {'_id': id}, 
@@ -38,15 +42,27 @@ class Tuya():
         
         return self._app_map(appliances['appliances'])
     
+    
     def _get_status(self, dev):
         result = self.cloud.getstatus(dev['id'])
         pow = (result['result'][4]['value']) /10.0
         on_off = result['result'][0]['value']
         return on_off, pow
     
+    
     def _to_energy(self, prev_energy, power):
         return prev_energy + (power * 1/60) / 1000
     
+    
+    def _save_data(self, doc, updates):
+        doc['user'] = self.user_id
+        doc['timestamp'] = self.ts 
+        Tuya.db.insert_doc('Test', doc)
+        Tuya.db.update_appliances('Users', str(self.user_id), updates) 
+        logging.info(f'meross: {self.ts} done')  
+        self.ts += timedelta(minutes=1) 
+        
+        
     def run(self): 
         doc = {}
         updates = []
@@ -61,19 +77,15 @@ class Tuya():
             if connection_status:
                 on_off, pow = self._get_status(dev)
                 doc[id] = pow
+                energy = self._to_energy(self.app_map[dev['id']][1], doc[id])
                 updates.append((id, {'status': on_off,
                                     'connection_status': connection_status,
-                                    'energy': self._to_energy(self.app_map[dev['id']][1], doc[id])}))
+                                    'energy': energy}))
             else:
                 doc[id] = None
                 updates.append((id, {'connection_status': connection_status}))
-                name = dev['name']
-                print(f'device {name} is offline')
-                # TO-DO: notify()       
-        doc['user'] = self.user_id
-        doc['timestamp'] = self.ts 
-        Tuya.db.insert_doc('Test', doc)
-        Tuya.db.update_appliances('Users', str(self.user_id), updates) 
-        logging.info(f'meross: {self.ts} done')  
-        self.ts += timedelta(minutes=1) 
+                self.fcm.notify(self.user_id, 'disconnection', {'app_name': dev['name']})
+                
+        self._save_data(doc, updates)   
+
         
