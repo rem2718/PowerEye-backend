@@ -6,7 +6,7 @@ from bson import ObjectId
 import logging
 class Meross(Task):
     DAY = timedelta(hours=20)
-    MIN = timedelta(hours=20)
+    MIN = timedelta(minutes=1)
     
     def __init__(self, user):
         self.user_id = user['id']
@@ -27,7 +27,7 @@ class Meross(Task):
             self.client = await MerossHttpClient.async_from_user_password(email=self.email, password=self.password)
             self.manager = MerossManager(http_client=self.client)
         except:
-            self.fcm.notify(self.user_id, 'creds')
+            Meross.fcm.notify(self.user_id, 'creds')
             logging.error('meross login error', exc_info=True)
        
         
@@ -46,23 +46,31 @@ class Meross(Task):
         if current - self.prev >= Meross.DAY:
             await self._update_creds()
             prev += Meross.DAY
-      
-            
-    def _app_map(self, appliances):
-        map = {}
-        for app in appliances:
-            if not app['is_deleted']:
-                map[app['meross_id']] = (str(app['_id']), app['energy'])
-        return map 
-       
+    
          
     def _get_appliances(self, id):
-        appliances = Meross.db.get_doc('Users', {'_id': ObjectId(id)}, 
-                        {'appliances._id': 1, 'appliances.meross_id': 1, 
-                         'appliances.energy': 1, 'appliances.is_deleted': 1})
-        
-        return self._app_map(appliances['appliances'])
-     
+        map = {}
+        appliances = Meross.db.get_doc('Users', 
+                        {'_id': ObjectId(id)}, {'appliances._id': 1, 
+                        'appliances.meross_id': 1, 'appliances.is_deleted': 1,
+                        'appliances.energy': 1, 'appliances.name': 1})
+        appliances = appliances['appliances']
+        for app in appliances:
+            if not app['is_deleted']:
+                map[app['meross_id']] = {'id':str(app['_id']), 'name':app['name'], 'energy':app['energy']}
+        self.app_map = map
+
+
+    async def _meross_init(self):
+        self._get_appliances(self.user_id)
+        await self._daily_update_creds()    
+        await self.manager.async_init()
+        await self.manager.async_device_discovery()
+        meross_devices = self.manager.find_devices(device_type="mss310")
+        logging.info(f'{len(meross_devices)} devices')
+        apps = list(self.app_map.keys())
+        return meross_devices, apps     
+
         
     def _to_energy(self, prev_energy, power):
         return prev_energy + (power * 1/60) / 1000 
@@ -72,10 +80,9 @@ class Meross(Task):
         try:
             await dev.async_update(timeout=2)        
             on_off = dev.is_on()
-            connection_status = True if dev.online_status.value == 1 else False
+            connection_status = dev.online_status.value == 1
             if not connection_status:
-                self.fcm.notify(self.user_id, 'disconnection', {'app_name': dev.name})
-                print(f'device {dev.name} is offline')
+                Meross.fcm.notify(self.user_id, 'disconnection', {'app_name': dev.name})
             return on_off, connection_status
         except Exception:
             logging.error('status error', exc_info=True)
@@ -90,54 +97,46 @@ class Meross(Task):
             logging.error('power error', exc_info=True)
             return None
 
-
-    async def _meross_init(self):
-        self.app_map = self._get_appliances(self.user_id)
-        await self._daily_update_creds()    
-        await self.manager.async_init()
-        await self.manager.async_device_discovery()
-        meross_devices = self.manager.find_devices(device_type="mss310")
-        logging.info(f'{len(meross_devices)} devices')
-        apps = [elem[0] for elem in self.app_map.values()]
-        return meross_devices, apps
-    
     
     def _save_data(self, doc, updates):
         doc['user'] = ObjectId(self.user_id)
         doc['timestamp'] = self.ts 
-        Meross.db.insert_doc('Powers', doc)
+        Meross.db.insert_doc('Test', doc)
         Meross.db.update_appliances('Users', self.user_id, updates)  
         logging.info(f'meross: {self.ts} done') 
-        self.ts += timedelta(minutes=1)
+        self.ts += Meross.MIN
             
             
     async def run(self):
         try:
             doc = {}
             updates = []
-            meross_devices, apps = self._meross_init()
+            meross_devices, apps = await self._meross_init()
             
             for dev in meross_devices:
                 try:
-                    id = self.app_map[str(dev.uuid)][0] 
+                    mer_id = str(dev.uuid)
+                    id = self.app_map[mer_id]['id']
                 except:
                     continue
-                apps.remove(id)
+                
+                apps.remove(mer_id)
                 on_off, connection_status = await self._get_status(dev)   
                 doc[id] = await self._one_reading(dev)
-                energy = self._to_energy(self.app_map[str(dev.uuid)][1], doc[id])
+                energy = self._to_energy(self.app_map[mer_id]['energy'], doc[id])
                 updates.append((id, {'status': on_off,
                                     'connection_status': connection_status,
                                     'energy': energy}))
             for app in apps:
                 updates.append((app, {'connection_status': False})) 
-                self.fcm.notify(self.user_id, 'disconnection', {'app_name': dev.name})
-                # get dev name
+                name = self.app_map[app]['name']
+                Meross.fcm.notify(self.user_id, 'disconnection', {'app_name': name})
+                
         except:
-            self.fcm.notify(self.user_id, 'creds')
+            Meross.fcm.notify(self.user_id, 'creds')
             logging.error('meross error', exc_info=True)
             await self._update_creds() 
-            
+        
         self._save_data(doc, updates)
             
 

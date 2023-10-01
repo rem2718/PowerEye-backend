@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 class DB(ABC):
 
     @abstractmethod
-    def get_doc(self, collection:str, query:dict={}, projection:dict={}):
+    def get_doc(self, collection:str, query:dict={}, projection:dict={}, sort:list=[]):
         pass
     
     @abstractmethod 

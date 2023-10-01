@@ -14,7 +14,7 @@ class Mongo(DB):
             logging.error('mongodb init error', exc_info=True)
 
 
-    def get_doc(self, collection, query={}, projection={}):
+    def get_doc(self, collection, query={}, projection={}, sort=[]):
         try: 
             doc = self.db[collection].find_one(query, projection)
             return doc  

@@ -2,11 +2,11 @@ from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from external_dependencies.mongo import Mongo
+from external_dependencies.FCM import FCM
 from multiprocessing import cpu_count
 from tasks.master import Master
 from dotenv import load_dotenv
 from datetime import datetime
-from FCM import FCM
 import logging
 import asyncio
 import os
@@ -59,4 +59,4 @@ URL = os.getenv('DB_URL')
 CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
 
 scheduler = Scheduler(URL, 'hemsproject', CRED)
-Scheduler.run()
+scheduler.run()

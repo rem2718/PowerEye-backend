@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from interfaces.task import Task
-from PRS import PRS
-# TO-DO: check sync, starting the server, timestamp for energy transfer
+from recommender import Recommender as PR
+# TO-DO: check sync between updater and checker, starting the server, timestamp for energy transfer
 class Updater(Task):
     db = None
     DAY = timedelta(days=1)
@@ -12,9 +12,8 @@ class Updater(Task):
 
 
     @classmethod
-    def set_deps(cls, db, fcm):
+    def set_deps(cls, db):
         cls.db = db
-        cls.fcm = fcm
         
         
     def update_month_energy(self, appliances, month_energy):
@@ -41,12 +40,12 @@ class Updater(Task):
         self.db.update_all('Users', 'appliances.$[].energy', 0)
         # get power (specific period)
         # loop over appliances
-        PRS.fill_na(power, doc)
+        PR.fill_na(power, doc)
         self.db.insert_doc('Energys', doc)
         # loop over app
-        PRS.cluster(app_id, power)
+        PR.cluster(app_id, power)
         # get energy (specific period) imputed values
-        PRS.energy_forecasting(app_id, energy)
+        PR.energy_forecasting(app_id, energy)
         self.ts += self.DAY
         
 
