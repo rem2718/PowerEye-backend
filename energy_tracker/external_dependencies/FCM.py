@@ -5,6 +5,8 @@ from firebase_admin import messaging
 import firebase_admin
 
 from external_dependencies.mongo import Mongo
+from types_classes import NotifType
+
 class FCM():
     
     def __init__(self, cred, db:Mongo):
@@ -15,26 +17,25 @@ class FCM():
     
     def map_message(self, type, data=None):
         match type:
-            case 'creds': 
+            case NotifType.CREDS: 
                 title = 'Credentials Update Required' 
                 body = 'Your Meross credentials need updating.'
-            case 'disconnection': 
+            case NotifType.DISCONNECTION: 
                 title = f'{data["app_name"]} is Offline' 
                 body = 'Please check its connection and try to reconnect it as soon as possible for improved personalized recommendations.'
-            case 'goal': 
+            case NotifType.GOAL: 
                 title = 'Monthly Goal'
-                body = f'Your current bill reach {data["percentsge"]}% of your monthly goal'
-            case 'peak': 
+                body = f'Your current bill reach {data["percentage"]}% of your monthly goal'
+            case NotifType.PEAK: 
                 title = 'Peak Time'
                 body = f'Try to postpone using {data["app_name"]} after 5 PM, click here to turn it off.'
-            case 'phantom': 
+            case NotifType.PHANTOM: 
                 title = 'Phantom Mode'
                 body = f'Your {data["app_name"]} is on phantom mode, click here to turn it off.'
-            case 'baseline': 
+            case NotifType.BASELINE: 
                 title = ''
                 body = f'Your {data["app_name"]} exceeds its daily baseline try to reduse using it today.'
         return title, body  
-        
         
     def notify(self, user, type, data={}):
         token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})

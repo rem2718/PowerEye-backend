@@ -6,7 +6,7 @@ from types_classes import PlugType
           
 class PlugController():
     
-    def __init__(self,  event_loop: asyncio.AbstractEventLoop, user:dict, type:PlugType):
+    def __init__(self,  event_loop:asyncio.AbstractEventLoop, user:dict, type:PlugType):
         self.loop = event_loop
         if type == PlugType.MEROSS:
             self.plug = Meross(user)

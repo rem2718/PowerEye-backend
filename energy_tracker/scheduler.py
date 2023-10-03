@@ -33,9 +33,8 @@ class Scheduler():
        
     def run(self):
         self._init_schedulers()
-        master_job = Master('', self.db, self.fcm)
-        self.scheduler.add_job(master_job.run, id='Master', args=[self.scheduler], trigger='interval', minutes=1, next_run_time=datetime.now())
-
+        master_job = Master('', self.db, self.fcm, self.scheduler)
+        self.scheduler.add_job(master_job.run, id='Master', name='Master', trigger='interval', minutes=1, next_run_time=datetime.now())
         try:
             self.scheduler.start()
             
@@ -44,10 +43,12 @@ class Scheduler():
             asyncio.get_event_loop().stop()
             self.logger.info('program terminated gracefully')
   
-  
-load_dotenv(os.path.join('.secrets', '.env'))
-URL = os.getenv('DB_URL')
-CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
+def main(): 
+    load_dotenv(os.path.join('.secrets', '.env'))
+    URL = os.getenv('DB_URL')
+    CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
 
-main_scheduler = Scheduler(URL, 'hemsproject', CRED)
-main_scheduler.run()             
+    main_scheduler = Scheduler(URL, 'hemsproject', CRED)
+    main_scheduler.run()             
+    
+main()

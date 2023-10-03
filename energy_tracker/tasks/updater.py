@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 from interfaces.task import Task
 from recommender import Recommender as PR
 # TO-DO: check sync between updater and checker, starting the server, timestamp for energy transfer
+# update month energy at the enf of the month
 class Updater(Task):
     db = None
     DAY = timedelta(days=1)
     
-    def __init__(self, user_id):
-        self.user_id = user_id
+    def __init__(self, id, db, fcm=None, additional=None):
+        self.user_id = id
         self.ts = datetime.now()
 
 

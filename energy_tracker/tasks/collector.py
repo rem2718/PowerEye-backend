@@ -2,16 +2,18 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import logging
 
+from tasks.plug_controller import PlugController
+from types_classes import NotifType
 from interfaces.task import Task
 
 class Collector(Task):
-    MIN = timedelta(minutes=1)
+    min = timedelta(minutes=1)
     
-    def __init__(self, id, db, fcm, plug):
-        self.cloud = plug
+    def __init__(self, id, db, fcm, additional:PlugController):
         self.user_id = id
         self.db = db 
         self.fcm = fcm
+        self.cloud = additional
         self.ts = datetime.now()
         self.notified = False
         self.flags = {}
@@ -21,12 +23,12 @@ class Collector(Task):
         map = {}
         appliances = self.db.get_doc('Users', 
                         {'_id': ObjectId(id)}, {'appliances._id': 1, 
-                        'appliances.meross_id': 1, 'appliances.is_deleted': 1,
+                        'appliances.cloud_id': 1, 'appliances.is_deleted': 1,
                         'appliances.energy': 1, 'appliances.name': 1})
         appliances = appliances['appliances']
         for app in appliances:
             if not app['is_deleted']:
-                map[app['meross_id']] = {'id': str(app['_id']), 'name': app['name'], 'energy': app['energy']}
+                map[app['cloud_id']] = {'id': str(app['_id']), 'name': app['name'], 'energy': app['energy']}
         return map  
 
     def _to_energy(self, prev_energy, power):
@@ -35,7 +37,7 @@ class Collector(Task):
     def _check_disconnected(self, id, name, connection_status):
         if not connection_status:
             if id not in self.flags or self.flags[id]:
-                self.fcm.notify(self.user_id, 'disconnection', {'app_name': name})
+                self.fcm.notify(self.user_id, NotifType.DISCONNECTION, {'app_name': name})
                 self.flags[id] = False
         else:
             self.flags[id] = True          
@@ -46,7 +48,7 @@ class Collector(Task):
             if id not in self.flags or self.flags[id]:
                 updates.append((cloud_id, {'connection_status': False})) 
                 name = app_map[cloud_id]['name']
-                self.fcm.notify(self.user_id, 'disconnection', {'app_name': name})
+                self.fcm.notify(self.user_id, NotifType.DISCONNECTION, {'app_name': name})
                 self.flags[id] = False
             
     def _get_doc_updates(self, cloud_devices, app_map):
@@ -74,22 +76,20 @@ class Collector(Task):
         self.db.insert_doc('Test', doc)
         self.db.update_appliances('Users', self.user_id, updates)  
         self.logger.critical(f'cloud: {self.ts} -> done') 
-        self.ts += Collector.MIN
+        self.ts += Collector.min
 
     def run(self):
         try:  
-            user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, {'meross_password':1}) 
-            if self.cloud.login(user['meross_password']):
+            user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, {'cloud_password':1}) 
+            if self.cloud.login(user['cloud_password']):
                 self.notified = False 
                 cloud_devices = self.cloud.get_devices()
                 app_map = self._get_appliances(self.user_id)
                 doc, updates = self._get_doc_updates(cloud_devices, app_map)
                 self._save_data(doc, updates)
             elif not self.notified:
-                self.fcm.notify(self.user_id, 'creds')
+                self.fcm.notify(self.user_id, NotifType.CREDS)
                 self.notified = True
         except:
             self.logger.error('cloud error', exc_info=True)
             self.cloud.update_creds() 
-
-        
