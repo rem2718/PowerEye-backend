@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 
 class DB(ABC):
+    
+    @abstractmethod
+    def __init__(self, URL:str, database:str):
+        pass
 
     @abstractmethod
     def get_doc(self, collection:str, query:dict={}, projection:dict={}, sort:list=[]):

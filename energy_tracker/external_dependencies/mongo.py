@@ -1,25 +1,27 @@
 # from pymongo.operations import UpdateOne
-from pymongo import MongoClient
-from interfaces.db import DB
 from bson import ObjectId
 import logging
 
+from pymongo import MongoClient
+
+from interfaces.db import DB
 class Mongo(DB):
     
     def __init__(self, URL, database):
+        self.logger = logging.getLogger(__name__)
         try:
             client = MongoClient(URL)
             self.db = client[database]
         except:
-            logging.error('mongodb init error', exc_info=True)
+            self.logger.error('mongodb init error', exc_info=True)
 
 
-    def get_doc(self, collection, query={}, projection={}, sort=[]):
+    def get_doc(self, collection, query={}, projection={}, sort=None):
         try: 
             doc = self.db[collection].find_one(query, projection)
             return doc  
         except:
-            logging.error('mongodb read error', exc_info=True) 
+            self.logger.error('mongodb read error', exc_info=True) 
             return False
         
         
@@ -28,7 +30,7 @@ class Mongo(DB):
             docs = self.db[collection].find(query, projection)
             return docs  
         except:
-            logging.error('mongodb read all error', exc_info=True) 
+            self.logger.error('mongodb read all error', exc_info=True) 
             return False
 
 
@@ -36,14 +38,14 @@ class Mongo(DB):
         try:
             self.db[collection].insert_one(doc)  
         except:
-            logging.error('mongodb insert error', exc_info=True) 
+            self.logger.error('mongodb insert error', exc_info=True) 
       
             
     def insert_docs(self, collection ,docs):
         try:
             self.db[collection].insert_many(docs)  
         except Exception as e:
-            logging.error('mongodb insert all error', exc_info=True)
+            self.logger.error('mongodb insert all error', exc_info=True)
      
             
     def update_appliances(self, collection, id, updates):
@@ -58,7 +60,7 @@ class Mongo(DB):
                 self.db[collection].update_one(filter_query, update_query)
                 
         except:
-            logging.error('mongodb update appliances error', exc_info=True) 
+            self.logger.error('mongodb update appliances error', exc_info=True) 
 
 
     def update_all(self, collection, field, value):
@@ -67,9 +69,8 @@ class Mongo(DB):
                 {field: value}})
         
         except:
-            logging.error('mongodb update all error', exc_info=True)
+            self.logger.error('mongodb update all error', exc_info=True)
 
-       
     # def update_docs(collection, update_value):
     #     try:  
     #         update_requests = []

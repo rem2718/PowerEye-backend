@@ -1,15 +1,17 @@
-from external_dependencies.mongo import Mongo
+import  logging
+
 from firebase_admin import credentials
 from firebase_admin import messaging
 import firebase_admin
 
+from external_dependencies.mongo import Mongo
 class FCM():
     
     def __init__(self, cred, db:Mongo):
         creds = credentials.Certificate(cred)
-        default_app = firebase_admin.initialize_app(creds)
+        firebase_admin.initialize_app(creds)
         self.db = db
-    
+        self.logger = logging.getLogger(__name__)
     
     def map_message(self, type, data=None):
         match type:
@@ -48,7 +50,8 @@ class FCM():
         # )
 
         # response = messaging.send(message)
-        # print("Successfully sent message:", response)
+        # logger.info
+        # logger.error
         # check all responses status
 
  
