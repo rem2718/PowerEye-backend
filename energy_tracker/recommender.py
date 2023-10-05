@@ -1,66 +1,25 @@
-from datetime import datetime, timedelta
+import math
 class Recommender():
-    HOUR = timedelta(hours=1)
     @classmethod  
-    def check_goal(cls, month_enegry:float, goal:float, flags:list):
+    def check_goal(cls, month_enegry:float, goal:float):
         percentage = month_enegry / goal 
-        match percentage:
-            case p if p >= 0.25 and not flags[0]: 
-                flags[0] = True 
-                return 25
-            case p if p >= 0.5 and not flags[1]: 
-                flags[1] = True 
-                return 50
-            case p if p >= 0.75 and not flags[2]: 
-                flags[2] = True 
-                return 75
-            case p if p >= 1 and not flags[3]: 
-                flags[3] = True 
-                return 100
-            case p if p >= 1.25 and not flags[4]: 
-                flags[4] = True 
-                return 125
-            case p if p >= 1.5 and not flags[5]: 
-                flags[5] = True 
-                return 150
-            case p if p >= 1.75 and not flags[6]: 
-                flags[6] = True 
-                return 175
-            case p if p >= 2 and not flags[7]: 
-                flags[7] = True 
-                return 200
-            case _: return 0 
-            
+        rounded = math.floor(percentage * 4) / 4
+        return int(rounded * 100) if rounded <= 2 else 0
             
     @classmethod
-    def check_phantom(cls, power:float, model):
-        # model.predict(power)
-        # if phantom -> 
-        # if current - ts > HOUR
-        # notify and return new ts
-        # else return same ts
-        pass
-    
+    def check_phantom(cls, model, power, status):
+        if status:
+            predicted_labels = model.predict([[0], [power]])
+            return predicted_labels[0] == predicted_labels[1]
+        return False
+         
     @classmethod
     def check_baseline(cls, energy, baseline):
-        if energy > baseline:
-            return True 
-        else:
-            return False
+        return energy > baseline
 
-    
     @classmethod  
-    def check_peak(cls, status, e_type):
-        if e_type == 2 and status:
-            return True
-        else:
-            return False 
-
-    
-    @classmethod
-    def reset_goal(cls,):
-        # reset flags monthly
-        pass
+    def check_peak(cls, status, e_type, types):
+        return status and e_type in types
 
     @classmethod
     def fill_na(cls, power, doc):

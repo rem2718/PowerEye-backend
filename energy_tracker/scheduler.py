@@ -23,7 +23,6 @@ class Scheduler():
         num_cores = cpu_count()    
         executors = {
             'default': ThreadPoolExecutor(num_cores),
-            'processpool': ProcessPoolExecutor(num_cores/2),
         }
         job_defaults = {
             'coalesce': False,

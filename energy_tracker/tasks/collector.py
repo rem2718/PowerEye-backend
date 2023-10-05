@@ -28,7 +28,11 @@ class Collector(Task):
         appliances = appliances['appliances']
         for app in appliances:
             if not app['is_deleted']:
-                map[app['cloud_id']] = {'id': str(app['_id']), 'name': app['name'], 'energy': app['energy']}
+                map[app['cloud_id']] = {
+                    'id': str(app['_id']), 
+                    'name': app['name'], 
+                    'energy': app['energy']
+                    }
         return map  
 
     def _to_energy(self, prev_energy, power):
@@ -83,10 +87,11 @@ class Collector(Task):
             user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, {'cloud_password':1}) 
             if self.cloud.login(user['cloud_password']):
                 self.notified = False 
-                cloud_devices = self.cloud.get_devices()
                 app_map = self._get_appliances(self.user_id)
-                doc, updates = self._get_doc_updates(cloud_devices, app_map)
-                self._save_data(doc, updates)
+                if len(app_map):
+                    cloud_devices = self.cloud.get_devices()
+                    doc, updates = self._get_doc_updates(cloud_devices, app_map)
+                    self._save_data(doc, updates)
             elif not self.notified:
                 self.fcm.notify(self.user_id, NotifType.CREDS)
                 self.notified = True

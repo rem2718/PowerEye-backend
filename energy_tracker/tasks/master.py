@@ -31,7 +31,7 @@ class Master(Task):
         # self.scheduler.add_job(tuya_job.run, id=f'collector_{user["id"]}', name=f'collector_{user["id"]}',
                                 # trigger='interval', minutes=1, coalesce=False, max_instances=1)
         self.scheduler.add_job(checker_job.run, id=f'checker_{user["id"]}', name=f'checker_{user["id"]}',
-                                    trigger='date', run_date=datetime.now()) #trigger='cron', hour=0, minute=0
+                                trigger='date', run_date=datetime.now()) #trigger='cron', hour=0, minute=0
         # self.scheduler.add_job(updater_job.run, id=f'updater_{user["id"]}', name=id=f'updater_{user["id"]}'
                                     # trigger='date') #trigger='cron', hour=0, minute=0     
                 
@@ -48,11 +48,11 @@ class Master(Task):
                     u = {'id': id, 'dev1': user['appliances'][0]['cloud_id']}
                     type = PlugType.TUYA
                 else:
-                    continue
                     u = {'id': id, 'email': user['email']}
                     type = PlugType.MEROSS
+                    continue
                 self._add_jobs(u, type) 
-                break         
+                break        
             elif user['is_deleted']:
                 self.scheduler.remove_job(f'collector_{id}')
                 self.scheduler.remove_job(f'checker_{id}')

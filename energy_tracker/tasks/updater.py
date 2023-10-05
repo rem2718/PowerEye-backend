@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from interfaces.task import Task
 from recommender import Recommender as PR
-# TO-DO: check sync between updater and checker, starting the server, timestamp for energy transfer
-# update month energy at the enf of the month
+# TO-DO: check sync between updater and checker, logs file, timestamp for energy transfer
+# update month energy at the end of the month 
+# tranfer energy to month energy daily
 class Updater(Task):
     db = None
     DAY = timedelta(days=1)
@@ -47,29 +48,4 @@ class Updater(Task):
         PR.cluster(app_id, power)
         # get energy (specific period) imputed values
         PR.energy_forecasting(app_id, energy)
-        self.ts += self.DAY
-        
-
-class Peak():
-         
-    def __init__(self, user_id):
-        self.user_id = user_id
-        self.flags = {}
-        
-    @classmethod    
-    def set_db(cls, db):
-        cls.db = db
-    
-    def reset_peak(self):
-        # set flags to false
-        pass
-    
-    def run(self):   
-        # get appliances (id, name, status, e_type)
-        # loop over appliances
-        # if flag true continue
-        self.flags[id] = PRS.check_peak(app_name, status, e_type)
-        # if current time > 4:59
-        self.reset_peak()
-         
-
+        self.ts += self.DAY 

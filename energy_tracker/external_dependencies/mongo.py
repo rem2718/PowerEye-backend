@@ -18,14 +18,14 @@ class Mongo(DB):
 
     def get_doc(self, collection, query={}, projection={}, sort=None):
         try: 
-            doc = self.db[collection].find_one(query, projection)
+            doc = self.db[collection].find_one(query, projection, sort=sort)
             return doc  
         except:
             self.logger.error('mongodb read error', exc_info=True) 
             return False
         
         
-    def get_docs(self, collection, query={}, projection={}):
+    def get_docs(self, collection, query={}, projection={}, sort=None):
         try: 
             docs = self.db[collection].find(query, projection)
             return docs  
