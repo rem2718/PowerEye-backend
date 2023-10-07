@@ -27,7 +27,7 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def update_all(self, collection:str, field:str, value):
+    def update(self, collection:str, id:str, field:str, value):
         pass
 
 

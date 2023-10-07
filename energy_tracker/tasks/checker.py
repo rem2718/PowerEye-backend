@@ -53,7 +53,7 @@ class Checker(Task):
     def _is_peak_hour(self, cur_hour):
         return self.peak_start <= cur_hour < self.peak_end
 
-    # DONT TEST THIS
+    # DONT TEST 
     def _get_model(self, type, app_id):
         # file_path = f'models_filesystem/{type}_models/{app_id}.pkl'
         file_path = f'models_filesystem/{type}_models/64d1605493d44252699aa216.pkl'
