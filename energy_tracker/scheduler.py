@@ -4,7 +4,7 @@ import logging
 import asyncio
 import os
 
-from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
+from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
