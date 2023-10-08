@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 import tinytuya
 
-from interfaces.plug import Plug
+from app.interfaces.plug import Plug
 class Tuya(Plug):
     MIN = timedelta(minutes=1)
 

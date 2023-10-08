@@ -3,7 +3,7 @@ import logging
 
 from pymongo import MongoClient
 
-from interfaces.db import DB
+from app.interfaces.db import DB
 class Mongo(DB):
     
     def __init__(self, URL, database):
@@ -55,9 +55,9 @@ class Mongo(DB):
         except:
             self.logger.error('mongodb update appliances error', exc_info=True) 
 
-    def update_one(self, collection, id, field, value):
+    def update(self, collection, id, field, value, array_filter=None):
         try:
             self.db[collection].update_one({'_id':ObjectId(id)}, {"$set": 
-                {field: value}})
+                {field: value}}, array_filter=array_filter)
         except:
             self.logger.error('mongodb update all error', exc_info=True)

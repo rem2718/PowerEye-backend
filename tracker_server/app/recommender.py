@@ -30,7 +30,7 @@ class Recommender():
     # DONT TEST 
     @staticmethod
     def cluster(app_id, power):
-        pass
+        return False
     
     # DONT TEST 
     @staticmethod
@@ -40,7 +40,7 @@ class Recommender():
     # DONT TEST 
     @staticmethod
     def energy_forecasting(app, energys):
-        pass
+        return False, -1
     
 
     

@@ -4,8 +4,8 @@ from firebase_admin import credentials
 from firebase_admin import messaging
 import firebase_admin
 
-from external_dependencies.mongo import Mongo
-from types_classes import NotifType
+from app.external_dependencies.mongo import Mongo
+from app.types_classes import NotifType
 
 class FCM():
     
@@ -41,7 +41,7 @@ class FCM():
         token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
         title, body = self.map_message(type, data)
         
-        print(f'notify: {type}', data)
+        self.logger.info(f'notify: {type}', data)
         # message = messaging.Message(
         #     data = {
         #         "title": title,
@@ -51,8 +51,8 @@ class FCM():
         # )
 
         # response = messaging.send(message)
-        self.logger.info()
-        self.logger.error()
+        # self.logger.info()
+        # self.logger.error()
         # check all responses status
 
  

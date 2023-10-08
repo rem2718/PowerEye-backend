@@ -4,7 +4,7 @@ import logging
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 
-from interfaces.plug import Plug
+from app.interfaces.plug import Plug
 class Meross(Plug):
     day = timedelta(hours=20)
     

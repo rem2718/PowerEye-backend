@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import logging
 
-from tasks.plug_controller import PlugController
-from types_classes import NotifType
-from interfaces.task import Task
+from app.plug_controller import PlugController
+from app.types_classes import NotifType
+from app.interfaces.task import Task
 
 class Collector(Task):
     min = timedelta(minutes=1)
@@ -36,6 +36,8 @@ class Collector(Task):
         return map  
 
     def _to_energy(self, prev_energy, power):
+        if power == None:
+            power = 0
         return prev_energy + (power * 1/60) / 1000
     
     def _check_disconnected(self, id, name, connection_status):
@@ -77,7 +79,7 @@ class Collector(Task):
     def _save_data(self, doc, updates):
         doc['user'] = ObjectId(self.user_id)
         doc['timestamp'] = self.ts 
-        self.db.insert_doc('Test', doc)
+        self.db.insert_doc('Powers_test', doc)
         self.db.update_appliances('Users', self.user_id, updates)  
         self.logger.critical(f'cloud: {self.ts} -> done') 
         self.ts += Collector.min

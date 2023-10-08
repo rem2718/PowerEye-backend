@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import pickle
 
-from recommender import Recommender as PR
-from types_classes import NotifType, EType
-from interfaces.task import Task
+from app.recommender import Recommender as PR
+from app.types_classes import NotifType, EType
+from app.interfaces.task import Task
 
 class Checker(Task):
     shiftable = [EType.SHIFTABLE.value, EType.PHANTOM.value]
@@ -36,8 +36,9 @@ class Checker(Task):
     
     def _get_powers(self, apps):
         projection = {key:1 for key, value in apps.items() if value['e_type'] == EType.PHANTOM.value}
+        projection['_id'] = 0
         if len(projection):
-            return self.db.get_doc('Powers', {'user': ObjectId(self.user_id)}, projection=projection, sort=[("timestamp", -1)])
+            return self.db.get_doc('Powers_test', {'user': ObjectId(self.user_id)}, projection=projection, sort=[("timestamp", -1)])
         else:
             return {}
         
@@ -54,9 +55,9 @@ class Checker(Task):
         return self.peak_start <= cur_hour < self.peak_end
 
     # DONT TEST 
-    def _get_model(self, type, app_id):
-        # file_path = f'models_filesystem/{type}_models/{app_id}.pkl'
-        file_path = f'models_filesystem/{type}_models/64d1605493d44252699aa216.pkl'
+    def _get_model(self, app_id):
+        # file_path = f'./models_filesystem/cluster_models/{app_id}.pkl'
+        file_path = 'tracker_server/models_filesystem/cluster_models/64d1605493d44252699aa216.pkl'
         file = open(file_path, "rb")
         model = pickle.load(file)
         file.close()
@@ -87,7 +88,7 @@ class Checker(Task):
             if datetime.now() - self.phantom_flags[id][1] > self.hour:
                 self.phantom_flags[id][0] = True
             if self.phantom_flags[id][0]:
-                model = self._get_model('cluster', id)
+                model = self._get_model(id)
                 if PR.check_phantom(model, pow, status):
                     self.fcm.notify(self.user_id, NotifType.PHANTOM, {'app_name': name})
                     self.phantom_flags[id][0] = False
@@ -116,6 +117,7 @@ class Checker(Task):
             
             self._notify_goal_check(user, cur_energy) 
             powers = self._get_powers(apps)
-            for id, pow in powers.items():
-                self._notify_phantom_check(id, pow, apps[id]['status'], apps[id]['name'])       
+            if powers:
+                for id, pow in powers.items():
+                    self._notify_phantom_check(id, pow, apps[id]['status'], apps[id]['name'])       
         

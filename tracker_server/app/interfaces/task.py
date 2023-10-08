@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from external_dependencies.fcm import FCM
-from interfaces.db import DB
+from app.external_dependencies.fcm import FCM
+from app.interfaces.db import DB
 
 class Task(ABC):
     

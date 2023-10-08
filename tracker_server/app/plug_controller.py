@@ -1,8 +1,8 @@
 import asyncio
 
-from external_dependencies.meross_module import Meross
-from external_dependencies.tuya_module import Tuya
-from types_classes import PlugType
+from app.external_dependencies.meross_module import Meross
+from app.external_dependencies.tuya_module import Tuya
+from app.types_classes import PlugType
           
 class PlugController():
     
