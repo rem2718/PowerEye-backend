@@ -1,8 +1,8 @@
 # app\controllers\goal_controller.py
 from flask import jsonify
-from app.models.room_model import Room, Appliance
+from web_server.app.models.room import Room, Appliance
 
-from app.models.room_model import Room
+from web_server.app.models.room import Room
 
 # may be added to user, not here 
 # def get_rooms():
