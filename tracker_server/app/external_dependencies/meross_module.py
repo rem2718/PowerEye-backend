@@ -6,9 +6,29 @@ from meross_iot.manager import MerossManager
 
 from app.interfaces.plug import Plug
 class Meross(Plug):
+    """
+    Meross for smart plug cloud interaction.
+    This class provides methods for controlling Meross smart plug devices, including logging in,
+    updating credentials, retrieving devices, and getting device information.
+
+    Attributes:
+        day (timedelta): Time interval for daily updates.
+        email (str): User's email for Meross account.
+        client (MerossHttpClient): Meross HTTP client instance.
+        manager (MerossManager): Meross manager instance.
+        loggedin (bool): Flag to indicate if the user is logged in.
+        first (bool): Flag to indicate if it's the first login.
+        prev (datetime): Previous timestamp for daily updates.
+        logger (logging.Logger): The logger for logging messages.
+    """
     day = timedelta(hours=20)
     
     def __init__(self, user):
+        """
+        Constructor for the Meross class.
+        Args:
+            user (dict): User information including email.
+        """
         self.email = user['email']
         self.client = None
         self.manager = None
@@ -18,6 +38,11 @@ class Meross(Plug):
         self.logger = logging.getLogger(__name__)
               
     async def _inner_login(self, password=None):
+        """
+        Perform the inner login process for Meross.
+        Args:
+            password (str, optional): Password for authentication.
+        """
         try:     
             if password != None:
                 self.password = password
@@ -29,6 +54,9 @@ class Meross(Plug):
             self.logger.error('meross login error')
               
     async def _logout(self):
+        """
+        Log out from the Meross account.
+        """
         try:
             self.manager.close()
             await self.client.async_logout()  
@@ -36,16 +64,30 @@ class Meross(Plug):
             self.logger.error('meross logout error')
             
     async def update_creds(self):
+        """
+        Update Meross credentials.
+        """
         await self._logout()
         await self._inner_login()
         
     async def _daily_update_creds(self):
+        """
+        Perform daily update of Meross credentials.
+        """
         current = datetime.now()
         if current - self.prev >= Meross.day:
             await self.update_creds()
             prev += Meross.day
             
     async def login(self, password):
+        """
+        Log in to the Meross device.
+        Args:
+            password (str): Password for authentication.
+
+        Returns:
+            bool: True if the login is successful, otherwise False.
+        """
         if self.first:
             await self._inner_login(password)
             self.first = False
@@ -55,6 +97,11 @@ class Meross(Plug):
         return self.loggedin 
            
     async def get_devices(self):  
+        """
+        Retrieve a list of Meross devices.
+        Returns:
+            list: A list of Meross devices.
+        """
         await self.manager.async_init()
         await self.manager.async_device_discovery()
         meross_devices = self.manager.find_devices(device_type="mss310")
@@ -62,9 +109,23 @@ class Meross(Plug):
         return meross_devices
         
     async def get_id(self, dev):
+        """
+        Get the unique identifier for a Meross device.
+        Args:
+            dev: Device object.
+        Returns:
+            str: The unique identifier of the device.
+        """
         return str(dev.uuid)
     
     async def get_info(self, dev): 
+        """
+        Get information about a Meross device.
+        Args:
+            dev: Device information.
+        Returns:
+            tuple: A tuple containing device status (on/off), connection status, and power consumption.
+        """
         try:     
             await dev.async_update(timeout=2)        
             on_off = dev.is_on()

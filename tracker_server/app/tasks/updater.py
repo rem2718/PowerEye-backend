@@ -12,15 +12,41 @@ from app.types_classes import EType
 # TO-DO: check sync between updater and checker, starting the server, when server crashes
 
 class Updater(Task):
+    """
+    Updater task for updating appliance energy data and models.
+    This class is responsible for updating appliance energy data and models, such as phantom mode cluster models and
+    baseline threshold models.
+    Attributes:
+        day (timedelta): Time interval of one day.
+        user_id (str): User identifier.
+        db: The database instance.
+        date: The current date.
+        logger: The logger instance.
+    """
     day = timedelta(days=1)
     
     def __init__(self, id, db, fcm=None, additional=None):
+        """
+        Constructor for the Updater class.
+        Args:
+            id: User identifier (not used here).
+            db: The database instance.
+            fcm: The FCM (Firebase Cloud Messaging) instance (not used here).
+            additional: Additional data (not used here).
+        """
         self.user_id = id
         self.db = db
         self.date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         self.logger = logging.getLogger(__name__)    
         
     def _update_energy(self, user):
+        """
+        Update user's energy data for the current month.
+        Args:
+            user: User document.
+        Returns:
+            dict: Updated energy data document.
+        """
         doc = {}
         doc['user'] = user['_id']
         doc['date'] = self.date
@@ -37,6 +63,11 @@ class Updater(Task):
         return doc   
         
     def _yesterday_powers(self):
+        """
+        Get power consumption data for the previous day.
+        Returns:
+            DataFrame: Dataframe containing power consumption data.
+        """
         previous_day = self.date - self.day
         query = {
             'user': ObjectId(self.user_id),
@@ -52,6 +83,11 @@ class Updater(Task):
       
     # check last day of month
     def _cur_month_energy(self):
+        """
+        Get energy consumption data for the current month.
+        Returns:
+            DataFrame: Dataframe containing energy consumption data.
+        """
         first_day = self.date.replace(day=1)
         yesterday = self.date - self.day
         last_day= self.date.replace(
@@ -74,13 +110,24 @@ class Updater(Task):
         return pd.DataFrame(list(energys))  
     
     def _dump_model(type, app_id, model):
+        """
+        Dump machine learning model to a file.
+        Args:
+            type: Model type ('cluster' or 'forecast').
+            app_id: Appliance identifier.
+            model: Machine learning model object.
+        """
         file_path = f'tracker_server/models_filesystem/cluster_models/{type}_models/{app_id}.pkl'
         file = open(file_path, "wb")
         pickle.dump(model, file)
         file.close()
  
     def run(self):
-        user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, {'current_month_energy': 1, 'appliances._id': 1, 'appliances.energy': 1, 'appliances.e_type': 1})
+        """
+        Run the updater task to update appliance energy data and models.
+        """
+        projection = {'current_month_energy': 1, 'appliances._id': 1, 'appliances.energy': 1, 'appliances.e_type': 1}
+        user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, projection)
         doc = self._update_energy(user)
         app_type = {str(app['_id']): app['e_type'] for app in user['appliances']}
         
