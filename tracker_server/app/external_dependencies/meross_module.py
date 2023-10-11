@@ -23,13 +23,13 @@ class Meross(Plug):
     """
     day = timedelta(hours=20)
     
-    def __init__(self, user):
+    def __init__(self, data):
         """
         Constructor for the Meross class.
         Args:
             user (dict): User information including email.
         """
-        self.email = user['email']
+        self.email = data['email']
         self.client = None
         self.manager = None
         self.loggedin = None

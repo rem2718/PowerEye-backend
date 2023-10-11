@@ -6,7 +6,6 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 
 from app.plug_controller import PlugController
 from app.tasks.collector import Collector
-from app.types_classes import PlugType
 from app.tasks.updater import Updater
 from app.tasks.checker import Checker
 from app.interfaces.task import Task
@@ -39,23 +38,23 @@ class Master(Task):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop) 
        
-    def _add_jobs(self, user:dict, type:PlugType):
+    def _add_jobs(self, id, data):
         """
         Add jobs for data collection, checking devices, and data updating.
         Args:
-            user (dict): User information.
-            type (PlugType): The type of smart plug.
+            id (str): User idintifier.
+            data (dict): User information.
         """
-        plug_controller = PlugController(self.loop, user, type)
-        collector_job = Collector(user['id'], self.db, self.fcm, plug_controller)
-        checker_job = Checker(user['id'], self.db, self.fcm)
-        updater_job = Updater(user['id'], self.db)
+        plug_controller = PlugController(self.loop, data)
+        collector_job = Collector(id, self.db, self.fcm, plug_controller)
+        checker_job = Checker(id, self.db, self.fcm)
+        updater_job = Updater(id, self.db)
         
-        self.scheduler.add_job(collector_job.run, id=f'collector_{user["id"]}', name=f'collector_{user["id"]}',
+        self.scheduler.add_job(collector_job.run, id=f'collector_{id}', name=f'collector_{id}',
                                 trigger='interval', minutes=1)
-        self.scheduler.add_job(checker_job.run, id=f'checker_{user["id"]}', name=f'checker_{user["id"]}',
+        self.scheduler.add_job(checker_job.run, id=f'checker_{id}', name=f'checker_{id}',
                                trigger='interval', minutes=1) 
-        self.scheduler.add_job(updater_job.run, id=f'updater_{user["id"]}', name=f'updater_{user["id"]}',
+        self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
                                      trigger='cron', hour=0, minute=0, second=0 )     
                 
     def run(self):
@@ -68,14 +67,13 @@ class Master(Task):
         
         for user in users:
             id = str(user["_id"])
-            if not self.scheduler.get_job(f'collector_{id}') and not user['is_deleted']:
-                if user['tuya']: 
-                    u = {'id': id, 'dev1': user['appliances'][0]['cloud_id']}
-                    type = PlugType.TUYA
-                else:
-                    u = {'id': id, 'email': user['email']}
-                    type = PlugType.MEROSS
-                self._add_jobs(u, type)        
+            if not self.scheduler.get_job(f'collector_{id}') and not user['is_deleted'] and len(user['appliances']): 
+                data = {
+                    'email': user['email'], 
+                    'dev1': user['appliances'][0]['cloud_id'], 
+                    'type': user['type']}
+    
+                self._add_jobs(id, data)        
             elif user['is_deleted']:
                 self.scheduler.remove_job(f'collector_{id}')
                 self.scheduler.remove_job(f'checker_{id}')

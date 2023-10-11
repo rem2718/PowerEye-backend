@@ -13,21 +13,27 @@ class PlugController():
         is_async (bool): True if the device interaction is asynchronous, False otherwise.
     """
     
-    def __init__(self,  event_loop:asyncio.AbstractEventLoop, user:dict, type:PlugType):
+    def __init__(self,  event_loop:asyncio.AbstractEventLoop, data:dict):
         """
         Constructor for the PlugController class.
         Args:
             event_loop (asyncio.AbstractEventLoop): The event loop for asynchronous operations.
-            user (dict): A dictionary containing user information.
-            type (PlugType): The type of Plug Device Cloud.
+            data (dict): A dictionary containing user data.
         """
         self.loop = event_loop
-        if type == PlugType.MEROSS:
-            self.plug = Meross(user)
-            self.is_async = True
-        elif type == PlugType.TUYA:
-            self.plug = Tuya(user)
-            self.is_async = False
+        self.plug, self.is_async = self._create_plug(data)
+                
+    def _create_plug(self, data):
+        """
+        Create a plug instance based on the 'type' field in the 'data' dictionary.
+        Args:
+            data (dict): A dictionary containing user data.
+        Returns:
+            tuple: A plug instance and a boolean indicating whether the device interaction is asynchronous (True) or not (False).
+        """
+        match data['type']:
+            case PlugType.MEROSS.value: return Meross(data), True
+            case PlugType.TUYA.value: return Tuya(data), False
      
     def _run_async(self, async_func):
         """

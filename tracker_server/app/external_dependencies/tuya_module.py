@@ -21,7 +21,7 @@ class Tuya(Plug):
         logger (logging.Logger): The logger for logging messages.
     """
 
-    def __init__(self, user):
+    def __init__(self, data):
         """
         Constructor for the Tuya class.
         Args:
@@ -30,7 +30,7 @@ class Tuya(Plug):
         load_dotenv(os.path.join('.secrets', '.env'))
         self.API_KEY = os.getenv('API_KEY')
         self.API_SECRET = os.getenv('API_SECRET')
-        self.dev1 = user['dev1']
+        self.dev1 = data['dev1']
         self.first = True
         self.logger = logging.getLogger(__name__)
     
