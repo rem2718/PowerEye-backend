@@ -38,9 +38,9 @@ class Master(Task):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop) 
        
-    def _add_jobs(self, id, data):
+    def _create_tasks(self, id, data):
         """
-        Add jobs for data collection, checking devices, and data updating.
+        Create and add jobs for data collection, checking devices, and data updating.
         Args:
             id (str): User idintifier.
             data (dict): User information.
@@ -67,19 +67,17 @@ class Master(Task):
         
         for user in users:
             id = str(user["_id"])
-            if not self.scheduler.get_job(f'collector_{id}') and not user['is_deleted'] and len(user['appliances']): 
-                data = {
-                    'email': user['email'], 
-                    'dev1': user['appliances'][0]['cloud_id'], 
-                    'type': user['type']}
-    
-                self._add_jobs(id, data)        
-            elif user['is_deleted']:
+            if not self.scheduler.get_job(f'collector_{id}') and not user['is_deleted']: 
+                if len(user['appliances']): 
+                    data = {
+                        'email': user['email'], 
+                        'dev1': user['appliances'][0]['cloud_id'], 
+                        'type': user['type']}
+                    self._create_tasks(id, data) 
+                           
+            elif self.scheduler.get_job(f'collector_{id}') and user['is_deleted']:
                 self.scheduler.remove_job(f'collector_{id}')
                 self.scheduler.remove_job(f'checker_{id}')
                 self.scheduler.remove_job(f'updater_{id}')
                 
         self.logger.info('done checking users')
-                
-        
-    

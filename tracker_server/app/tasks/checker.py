@@ -107,7 +107,7 @@ class Checker(Task):
 
     # DONT TEST 
     def _get_model(self, app_id):
-        # file_path = f'./models_filesystem/cluster_models/{app_id}.pkl'
+        # file_path = f'./models_filesystem/cluster_models/{app_id}.pkl' it should be merged with the user id as well
         file_path = 'tracker_server/models_filesystem/cluster_models/64d1605493d44252699aa216.pkl'
         file = open(file_path, "rb")
         model = pickle.load(file)

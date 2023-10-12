@@ -25,7 +25,7 @@ class Tuya(Plug):
         """
         Constructor for the Tuya class.
         Args:
-            user (dict): User information including device details.
+            data (dict): User information including device details.
         """
         load_dotenv(os.path.join('.secrets', '.env'))
         self.API_KEY = os.getenv('API_KEY')

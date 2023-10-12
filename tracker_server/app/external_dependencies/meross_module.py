@@ -27,7 +27,7 @@ class Meross(Plug):
         """
         Constructor for the Meross class.
         Args:
-            user (dict): User information including email.
+            data (dict): User information including email.
         """
         self.email = data['email']
         self.client = None
