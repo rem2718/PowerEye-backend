@@ -20,7 +20,8 @@ async def verify_credentials(email=None, password=None):
     session['issued_on'] = client.cloud_credentials.issued_on
     return True
 
-async def get_appliances():
+async def get_appliances(): 
+    # get smartplugs
     pass
 
 async def switch(appliance, status):
