@@ -1,6 +1,6 @@
 # app\controllers\appliance_controller.py
 from flask import jsonify
-from app.models.energy_model import DailyEnergy
+from app.models.energy_model import Energy
 
 def get_appliance_daily_energy(time_since_current):
     return

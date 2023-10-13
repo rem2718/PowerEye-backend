@@ -2,3 +2,4 @@ pow_env/
 __pycache__/
 .secrets/
 .vscode
+web_server/venv

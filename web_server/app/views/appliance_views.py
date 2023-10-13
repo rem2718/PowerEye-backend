@@ -1,6 +1,7 @@
+from app import app
 from flask import request
 from app.controllers.appliance_controller import add_appliance, switch_appliance, delete_appliance, get_power, get_smartPlugs, get_appliances
-from app import app
+
 
 @app.route('/smartplug', methods=['get'])
 def get_smartPlugs_route():

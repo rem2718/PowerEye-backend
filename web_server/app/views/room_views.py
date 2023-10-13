@@ -1,6 +1,7 @@
+from app import app
 from flask import request
 from app.controllers.room_controller import create_room, switch_room, add_appliance_to_room, delete_room_appliance, get_rooms, get_room_appliances
-from app import app
+
 
 @app.route('/room', methods=['POST'])
 def create_room_route():

@@ -3,13 +3,6 @@ from flask import jsonify
 from app.models.appliance_model import Appliance
 
 
-# May be added to user, not here 
-# def get_smartPlugs():
-#     pass
-
-# def get_appliances():
-#     pass    
-
 def add_appliance(name, type):
     appliance = Appliance(name=name, type=type)
     appliance.save()

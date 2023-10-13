@@ -1,15 +1,8 @@
 # app\controllers\goal_controller.py
 from flask import jsonify
-from web_server.app.models.room import Room, Appliance
+from app.models.room_model import Room
+from app.models.appliance_model import Appliance
 
-from web_server.app.models.room import Room
-
-# may be added to user, not here 
-# def get_rooms():
-#     # Implementation details for retrieving a list of rooms
-#     rooms = Room.objects()
-#     room_list = [{'id': str(room.id), 'name': room.name, 'status': room.status} for room in rooms]
-#     return {'rooms': room_list}
 
 def get_room_appliances(room_id):
     # Implementation details for retrieving a list of appliances in a room

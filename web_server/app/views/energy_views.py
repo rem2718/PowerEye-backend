@@ -1,8 +1,8 @@
 # app\views\energy_views.py
-
+from app import app
 from flask import request
 from app.controllers.energy_controller import get_appliance_daily_energy, get_appliance_weekly_energy, get_appliance_monthly_energy,get_appliance_yearly_energy, get_room_daily_energy,get_room_weekly_energy,get_room_monthly_energy,get_room_yearly_energy, get_total_daily_energy, get_total_weekly_energy,get_total_monthly_energy, get_total_yearly_energy
-from app import app
+
 
 @app.route('/energy/appliance/<string:timeframe>/<int:timeSinceCurrent>', methods=['GET']) 
 def appliance_energy_route(time_frame, time_since_current):
