@@ -77,7 +77,7 @@ class Checker(Task):
         """
         projection = {key:1 for key, value in apps.items() if value['e_type'] == EType.PHANTOM.value}
         projection['_id'] = 0
-        sort = [("timestamp", -1)]
+        sort = [("timestamp", -1)]  
         if len(projection):
             return self.db.get_doc('Powers_test', {'user': ObjectId(self.user_id)}, projection=projection, sort=sort)
         else:
@@ -114,7 +114,7 @@ class Checker(Task):
         file.close()
         return model
 
-    def _notify_goal_check(self, user, cur_energy):
+    def _notify_goal(self, user, cur_energy):
         """
         Notify the user about reaching their energy consumption goal.
         Args:
@@ -122,14 +122,14 @@ class Checker(Task):
             cur_energy: Current energy consumption for the day.
         """
         goal = user['energy_goal']
-        if goal != -1:
+        if goal > 0:
             month_enegry = user['current_month_energy'] + cur_energy
             percentage = PR.check_goal(month_enegry, goal)
             if percentage and self.goal_flags[percentage]:
                 self.fcm.notify(self.user_id, NotifType.GOAL, {'percentage':percentage})
                 self.goal_flags[percentage] = False
     
-    def _notify_peak_check(self, id, status, e_type, name):
+    def _notify_peak(self, id, status, e_type, name):
         """
         Notify the user about peak hour energy consumption for an appliance.
         Args:
@@ -143,11 +143,11 @@ class Checker(Task):
             self.peak_flags[id] = True
         if self.peak_flags[id] and self._is_peak_hour(cur_hour): 
             if PR.check_peak(status, e_type, self.shiftable):
-                self.fcm.notify(self.user_id, NotifType.BASELINE, {'app_name': name})
+                self.fcm.notify(self.user_id, NotifType.PEAK, {'app_name': name})
                 self.peak_flags[id] = False
     
     # DONT TEST THIS
-    def _notify_phantom_check(self, id, pow, status, name):
+    def _notify_phantom(self, id, power, status, name):
         """
         Notify the user of phantom mode appliance usage.
         Args:
@@ -158,15 +158,16 @@ class Checker(Task):
         """
         if id not in self.phantom_flags:
             self.phantom_flags[id] = [True, datetime.now()]
-        if datetime.now() - self.phantom_flags[id][1] > self.hour:
+        if  not self.phantom_flags[id][0] and datetime.now() - self.phantom_flags[id][1] > self.hour:
             self.phantom_flags[id][0] = True
         if self.phantom_flags[id][0]:
             model = self._get_model(id)
-            if PR.check_phantom(model, pow, status):
+            if PR.check_phantom(model, power, status):
                 self.fcm.notify(self.user_id, NotifType.PHANTOM, {'app_name': name})
                 self.phantom_flags[id][0] = False
+                self.phantom_flags[id][1] = datetime.now() 
                     
-    def _notify_baseline_check(self, id, energy, threshold, name):
+    def _notify_baseline(self, id, energy, baseline, name):
         """
         Notify the user of baseline threshold condition.
         Args:
@@ -177,8 +178,8 @@ class Checker(Task):
         """
         if id not in self.baseline_flags:
             self.baseline_flags[id] = True
-        if threshold > 0 and self.baseline_flags[id]:
-            if PR.check_baseline(energy, threshold):
+        if baseline > 0 and self.baseline_flags[id]:
+            if PR.check_baseline(energy, baseline):
                 self.fcm.notify(self.user_id, NotifType.BASELINE, {'app_name': name})
                 self.baseline_flags[id] = False          
                         
@@ -196,12 +197,12 @@ class Checker(Task):
             cur_energy = 0
             for id, app in apps.items():
                 cur_energy += app['energy']
-                self._notify_peak_check(id, app['status'], app['e_type'], app['name'])
-                self._notify_baseline_check(id, app['energy'], app['threshold'], app['name'])
+                self._notify_peak(id, app['status'], app['e_type'], app['name'])
+                self._notify_baseline(id, app['energy'], app['threshold'], app['name'])
             
-            self._notify_goal_check(user, cur_energy) 
+            self._notify_goal(user, cur_energy) 
             powers = self._get_powers(apps)
             if powers:
                 for id, pow in powers.items():
-                    self._notify_phantom_check(id, pow, apps[id]['status'], apps[id]['name'])       
+                    self._notify_phantom(id, pow, apps[id]['status'], apps[id]['name'])       
         

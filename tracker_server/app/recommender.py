@@ -17,19 +17,32 @@ class Recommender():
         percentage = month_enegry / goal 
         rounded = math.floor(percentage * 4) / 4
         return int(rounded * 100) if rounded <= 2 else 0
-            
+    
+    @staticmethod  
+    def check_peak(status, e_type, types):
+        """
+        Check if a shiftable device is on during peak time.
+        Args:
+            status (boolean): The status (ON/OFF) of the device.
+            e_type (EType): The energy type of the device.
+            types (list): A list of shiftable devices types.
+        Returns:
+            bool: True if the device is shiftable and on, False otherwise.
+        """
+        return status and e_type in types  
+          
     @staticmethod
     def check_phantom(model, power, status):
         """
         Check if a device is in phantom mode based on a machine learning model prediction.
         Args:
-            model: The machine learning model (k-mean cluster) for prediction.
-            power: The power consumption of the device.
-            status: The status (ON/OFF) of the device.
+            model (sklearn.cluster.KMeans): The machine learning model (k-mean cluster) for prediction.
+            power (float): The power consumption of the device.
+            status (boolean): The status (ON/OFF) of the device.
         Returns:
             bool: True if the device is in phantom mode, False otherwise.
         """
-        if status:
+        if model and status:
             predicted_labels = model.predict([[0], [power]])
             return predicted_labels[0] == predicted_labels[1]
         return False
@@ -45,19 +58,6 @@ class Recommender():
             bool: True if the energy consumption exceeds the baseline, False otherwise.
         """
         return energy > baseline
-
-    @staticmethod  
-    def check_peak(status, e_type, types):
-        """
-        Check if a shiftable device is on during peak time.
-        Args:
-            status: The status (ON/OFF) of the device.
-            e_type: The energy type of the device.
-            types: A list of shiftable devices types.
-        Returns:
-            bool: True if the device is shiftable and on, False otherwise.
-        """
-        return status and e_type in types
 
     # DONT TEST 
     @staticmethod
