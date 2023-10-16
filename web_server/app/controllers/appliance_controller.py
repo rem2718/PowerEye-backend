@@ -8,7 +8,7 @@ def add_appliance(name, cloud_id, type):
         name=name,
         cloud_id=cloud_id,
         # e_type=e_type,
-        connection_status=True,
+        # connection_status=True,
         baseline_threshold=-1,
     )
     appliance.save()
