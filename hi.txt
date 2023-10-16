@@ -1,0 +1,15 @@
+_id: 64e12d5b5e75679b46b01ac9
+timestamp : 2023-08-20T00:00:11.782+00:00
+64d1629393d44252699aa21b : 0
+user : 64d1548894895e0b4c1bc07f
+64d161e193d44252699aa219 : 122.327
+64d161fd93d44252699aa21a : NaN
+64d160d293d44252699aa218 :113.8
+64d1605493d44252699aa216 : 7.
+64d15f9393d44252699aa215 : 0
+64d162bf93d44252699aa21c : 1.24
+64d1609b93d44252699aa217 : 0
+
+
+    powers = Power.objects().to_json()  # Retrieve all Power documents and convert to JSON
+    return powers, 200, {'Content-Type': 'application/json'}

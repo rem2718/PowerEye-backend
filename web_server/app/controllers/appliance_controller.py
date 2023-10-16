@@ -3,8 +3,14 @@ from flask import jsonify
 from app.models.appliance_model import Appliance
 
 
-def add_appliance(name, type):
-    appliance = Appliance(name=name, type=type)
+def add_appliance(name, cloud_id, type):
+    appliance = Appliance(
+        name=name,
+        cloud_id=cloud_id,
+        # e_type=e_type,
+        connection_status=True,
+        baseline_threshold=-1,
+    )
     appliance.save()
     return jsonify({'message': 'Appliance added successfully'}), 201
 
@@ -16,6 +22,7 @@ def switch_appliance(id, status):
 
 def delete_appliance(id):
     # Delete appliance logic
+    # Do not forget to delete the appliance from the rooms as well
     return jsonify({'message': 'Appliance deleted successfully'}), 200
 
 def get_power(id):

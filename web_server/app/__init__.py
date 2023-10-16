@@ -3,10 +3,11 @@ from flask import Flask, jsonify,request
 from .extensions import db,bcrypt,csrf
 from .models.user_model import User  #Import the relevant model
 from .models.room_model import Room  #Import the relevant model
-# from .models.user_model import User  #Import the relevant model
+from .models.power_model import Power  #Import the relevant model
 # from .models.user_model import User  #Import the relevant model
 # from .models.user_model import User  #Import the relevant model
 import asyncio
+import json
 
 
 
@@ -53,7 +54,7 @@ def create_app(config_object='app.config'):
 
         # Assuming you want to add the first three appliances from the user's list
         for appliance in user.appliances[:3]:
-            room.appliances.append(appliance)
+            room.appliances.append(appliance._id)
 
         room.save()
 
@@ -62,10 +63,34 @@ def create_app(config_object='app.config'):
             return jsonify(document.to_json())
         else:
             return jsonify({'message': 'No document found'})
+        
+        
+    @app.route('/test_read_power')
+    def test_read_power():
+        # Assuming you have some Powers in your database
+        powers = Power.objects[:2].to_json()  # Retrieve all Power documents and convert to JSON
+        
+        # Convert the JSON string to a Python list of dictionaries
+        powers_list = json.loads(powers)
+        
+        labeled_powers = []
+        for power in powers_list:
+            labeled_power = {
+                'Timestamp': power['timestamp']['$date'],
+                'User': power['user']['$oid'],
+            }
+            
+            # Iterate through the keys and add labels dynamically
+            for key, value in power.items():
+                if key not in ['timestamp', 'user', '_id']:
+                    labeled_power[f'Appliance {key} Power'] = value
+            
+            labeled_powers.append(labeled_power)
+        
+        return jsonify(labeled_powers), 200, {'Content-Type': 'application/json'}
 
-
-    
-    # Register blueprints
-    from .controllers import user_controller, energy_controller, appliance_controller, room_controller
+        
+        # Register blueprints
+        from .controllers import user_controller, energy_controller, appliance_controller, room_controller
 
     return app
