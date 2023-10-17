@@ -50,8 +50,6 @@ def create_app(config_object='app.config'):
             user_id=user
         )
 
-        room.save()
-
         # Assuming you want to add the first three appliances from the user's list
         for appliance in user.appliances[:3]:
             room.appliances.append(appliance._id)

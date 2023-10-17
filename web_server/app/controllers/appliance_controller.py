@@ -4,6 +4,7 @@ from app.models.appliance_model import Appliance,ApplianceType, EType
 from app.models.user_model import User
 from app.models.room_model import Room
 from app.models.power_model import Power
+from app.controllers.room_controller import delete_appliance_from_room
 from meross_interface import get_smartplugs,switch
 
 
@@ -102,9 +103,6 @@ def add_appliance(user, name, cloud_id, type):
 def get_appliances(user):
     try:
         appliances = user.appliances
-
-        # You might want to do some processing or filtering on the appliances here if needed
-
         return jsonify({'appliances': [appliance.to_dict() for appliance in appliances]}), 200
     except Exception as e:
         return jsonify({'message': f'Error occurred while retrieving appliances: {str(e)}'}), 500
@@ -116,7 +114,7 @@ def delete_appliance(id):
         appliance = Appliance.objects.get(id=id)
         appliance.is_deleted = True
         appliance.save()
-        remove_appliance_from_rooms(id)
+        delete_appliance_from_room(id)
         return jsonify({'message': 'Appliance deleted successfully'}), 200
 
     except Exception as e:
@@ -124,16 +122,6 @@ def delete_appliance(id):
 
 
 
-def remove_appliance_from_rooms(id):
-    try:
-        rooms = Room.objects(appliances=id)
-        for room in rooms:
-            room.appliances.remove(id)
-            room.save()
-        return jsonify({'message': 'Appliance removed from rooms successfully'}), 200
-
-    except Exception as e:
-        return jsonify({'message': f'Error occurred while removing appliance from rooms: {str(e)}'}), 500
 
 def update_appliance(id, name):
     try:
