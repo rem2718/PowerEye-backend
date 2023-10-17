@@ -9,8 +9,6 @@ from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 
 
-
-
 def login(email, password):
     form = LoginForm()
 
@@ -75,8 +73,6 @@ def delete_goal():
     return jsonify({'message': 'Goal deleted successfully'}), 200
 
 
-def get_appliances():
-    pass    
 
 def get_rooms():
     # Implementation details for retrieving a list of rooms

@@ -35,7 +35,6 @@ class ApplianceType(Enum):
 
 
 
-
 class Appliance(db.EmbeddedDocument):
     _id = db.ObjectIdField(unique=True, default=None)
     name = db.StringField(unique=True)
