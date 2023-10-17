@@ -32,6 +32,8 @@ def validate_meross_credentials(email, password):
 
 
 def signup(email, power_eye_password, meross_password):
+    # vlidate email uniqueness only with not deleted users 
+    
     try:
         # Validate PowerEye system password
         if not validate_power_eye_password(power_eye_password):
