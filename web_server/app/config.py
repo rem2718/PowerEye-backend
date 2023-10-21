@@ -1,13 +1,12 @@
 #web_server\app\config.py
-from dotenv import load_dotenv
-load_dotenv()
 import os
+from dotenv import load_dotenv
 
-# Flask settings
-SECRET_KEY = os.environ.get('SECRET_KEY')
+load_dotenv()
 
-# Flask mongoengine settings
-MONGODB_URI = os.environ.get('MONGODB_URI')
-MONGODB_SETTINGS = {
-    'host': MONGODB_URI
-}
+class Config:
+    DEBUG = True
+    MONGODB_URI = os.environ.get('DEV_DB_URL')
+    MONGODB_SETTINGS = {
+        'host': MONGODB_URI
+    }
