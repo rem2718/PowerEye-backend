@@ -6,9 +6,9 @@ load_dotenv()
 
 class TestConfig:
     TESTING = True
+    MONGODB_URI = os.environ.get('TEST_DB_URL')
     MONGODB_SETTINGS = {
-        'db': os.getenv('TEST_DB_NAME'),
-        'host': os.getenv('TEST_DB_URL')
+        'host': MONGODB_URI
     }
 
 

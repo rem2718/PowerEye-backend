@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     DEBUG = True
+    MONGODB_URI = os.environ.get('DEV_DB_URL')
     MONGODB_SETTINGS = {
-        'db': os.getenv('DEV_DB_NAME'),
-        'host': os.getenv('DEV_DB_URL')
+        'host': MONGODB_URI
     }
