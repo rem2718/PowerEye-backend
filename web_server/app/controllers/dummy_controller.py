@@ -1,5 +1,5 @@
 import asyncio
-from cloud_interface import Cloud_interface
+from app.utils.cloud_interface import Cloud_interface
 
 async def main():
     loop = asyncio.get_running_loop()

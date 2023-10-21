@@ -1,7 +1,7 @@
 #run.py:
 import asyncio
 from app import create_app
-from cloud_interface import Cloud_interface
+from app.utils.cloud_interface import Cloud_interface
 
 
 if __name__ == '__main__':
