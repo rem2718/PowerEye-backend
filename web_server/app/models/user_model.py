@@ -6,7 +6,11 @@ from datetime import datetime, timedelta
 from mongoengine import EmbeddedDocumentField
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
+from enum import Enum
 
+class CloudType(Enum):
+    MERROS = 1
+    TUYA = 2
 
 
 class User(db.Document):
@@ -15,10 +19,10 @@ class User(db.Document):
     username = db.StringField()
     is_deleted = db.BooleanField(default=False)
     appliances = db.ListField(EmbeddedDocumentField(Appliance))
-    cloud_type= db.IntField()
+    cloud_type= db.EnumField(CloudType, default=CloudType.MERROS)
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
-    energy_goal = db.FloatField(default=0.0)
+    energy_goal = db.FloatField(default=-1.0)
     registration_token = db.StringField(default="")
     #profile_pic
     

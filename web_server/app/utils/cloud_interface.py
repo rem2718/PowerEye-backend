@@ -1,3 +1,4 @@
+# This file will be moved later on to its correct place
 from meross_iot.model.credentials import MerossCloudCreds
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
@@ -10,6 +11,7 @@ load_dotenv(dotenv_path)
 
 EMAIL = os.getenv("EMAIL")
 PASS = os.getenv("PASS")
+
 
 async def verify_credentials(email=None, password=None):
     client = await MerossHttpClient.async_from_user_password(email=email, password=password)
