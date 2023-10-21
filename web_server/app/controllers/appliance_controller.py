@@ -4,7 +4,7 @@ from app.models.appliance_model import Appliance,ApplianceType, EType
 from app.models.user_model import User
 from app.models.power_model import Power
 from app.controllers.room_controller import delete_appliance_from_room
-from app.utils.cloud_interface import get_smartplugs, switch
+from meross_interface import get_smartplugs, switch
 
 # Helper function to map the type of the appliances with (shiftable, phantom, none)
 def map_appliance_type_to_e_type(appliance_type):
@@ -164,6 +164,8 @@ def delete_appliance(user_id, appliance_id):
         # Soft delete the appliance by marking it as deleted
         appliance.is_deleted = True
         user.save()
+        # # delete_appliance_from_room
+        # delete_appliance_from_room(user_id, room_id, appliance_id)
 
         return jsonify({'message': 'Appliance deleted successfully'}), 200
 
@@ -198,34 +200,34 @@ def update_appliance(user_id, appliance_id, name):
     except Exception as e:
         return jsonify({'message': f'Error occurred while updating appliance: {str(e)}'}), 500
 
-def switch_appliance(user_id, appliance_id, status):
-    try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
+# def switch_appliance(user_id, appliance_id, status):
+#     try:
+#         # Get the user by ID
+#         user = User.objects.get(id=user_id)
 
-        if not user:
-            return jsonify({'message': 'User not found'}), 404
+#         if not user:
+#             return jsonify({'message': 'User not found'}), 404
 
-        # Find the appliance within the user's appliances
-        appliance = next((app for app in user.appliances if str(app.id) == appliance_id), None)
+#         # Find the appliance within the user's appliances
+#         appliance = next((app for app in user.appliances if str(app.id) == appliance_id), None)
 
-        if not appliance:
-            return jsonify({'message': 'Appliance not found'}), 404
+#         if not appliance:
+#             return jsonify({'message': 'Appliance not found'}), 404
 
-        # Retrieve the cloud ID of the appliance
-        cloud_id = appliance.cloud_id
+#         # Retrieve the cloud ID of the appliance
+#         cloud_id = appliance.cloud_id
 
-        # Switch based on the cloud ID and status
-        switch(cloud_id, status)
+#         # Switch based on the cloud ID and status
+#         switch(cloud_id, status)
 
-        # Update the status of the appliance
-        appliance.status = status
-        user.save()
+#         # Update the status of the appliance
+#         appliance.status = status
+#         user.save()
 
-        return jsonify({'message': 'Appliance status updated successfully'}), 200
+#         return jsonify({'message': 'Appliance status updated successfully'}), 200
 
-    except Exception as e:
-        return jsonify({'message': f'Error occurred while switching appliance status: {str(e)}'}), 500
+#     except Exception as e:
+#         return jsonify({'message': f'Error occurred while switching appliance status: {str(e)}'}), 500
 
 def get_most_recent_reading(user_id, appliance_id):
     try:

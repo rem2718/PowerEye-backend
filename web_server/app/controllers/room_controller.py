@@ -2,7 +2,7 @@
 from flask import jsonify
 from app.models.room_model import Room
 from app.models.appliance_model import Appliance
-from app.controllers.appliance_controller import switch_appliance_status
+# from app.controllers.appliance_controller import switch_appliance_status
 
 # Helper function to validate room name
 def validate_room_name(name, user):
@@ -86,29 +86,29 @@ def create_room(user_id, name, appliance_ids):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def switch_room(user_id, room_id, status):
-    try:
-        # Find the room by its ID and user ID
-        room = Room.objects(user_id=user_id, id=room_id).first()
+# def switch_room(user_id, room_id, status):
+#     try:
+#         # Find the room by its ID and user ID
+#         room = Room.objects(user_id=user_id, id=room_id).first()
 
-        if not room:
-            return jsonify({'message': 'Room not found'}), 404
+#         if not room:
+#             return jsonify({'message': 'Room not found'}), 404
 
-        for appliance_id in room.appliances:
-            appliance = Appliance.objects.get(id=appliance_id)
+#         for appliance_id in room.appliances:
+#             appliance = Appliance.objects.get(id=appliance_id)
 
-            if appliance:
-                switch_appliance_status(appliance.id, status)
-            else:
-                return jsonify({'message': f'Appliance with ID {appliance_id} not found.'}), 404
+#             if appliance:
+#                 switch_appliance_status(appliance.id, status)
+#             else:
+#                 return jsonify({'message': f'Appliance with ID {appliance_id} not found.'}), 404
 
-        return jsonify({'message': 'Room appliances status updated successfully'}), 200
+#         return jsonify({'message': 'Room appliances status updated successfully'}), 200
 
-    except DoesNotExist:
-        return jsonify({'message': 'Room not found'}), 404
+#     except DoesNotExist:
+#         return jsonify({'message': 'Room not found'}), 404
 
-    except Exception as e:
-        return jsonify({'message': f'Error occurred while switching room appliances status: {str(e)}'}), 500
+#     except Exception as e:
+#         return jsonify({'message': f'Error occurred while switching room appliances status: {str(e)}'}), 500
 
 def add_appliance_to_room(user_id, room_id, appliance_id):
     try:
