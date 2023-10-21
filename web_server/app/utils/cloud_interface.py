@@ -4,7 +4,7 @@ from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 import tinytuya
 import asyncio
-#from types_classes import PlugType
+from types_classes import PlugType
 from flask import session
 import os
 from dotenv import load_dotenv
@@ -33,12 +33,12 @@ class cloud_interface():
         else:
             return False
         
- #   def  get_smartplugs(self, type, user):
+    def  get_smartplugs(self, type, user):
         match type:
             case PlugType.MEROSS.value: return self._run_async(Meross.get_appliances(user))
             case PlugType.TUYA.value: return Tuya.get_appliances(user)
  
- #   def switch(self, type, user, app_id, status):    
+    def switch(self, type, user, app_id, status):    
         match type:
             case PlugType.MEROSS.value: return self._run_async(Meross.switch(user, app_id, status))
             case PlugType.TUYA.value: return Tuya.switch(user, app_id, status)   

@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify
 dummy_controller = Blueprint('dummy_controller', __name__)
 
 @dummy_controller.route('/verify')
-def verify_credentials():
+def test_verify_credentials():
     # Dummy user information for verification
     user = {
         'id': 1,
@@ -15,4 +15,4 @@ def verify_credentials():
     # Call the verification method
     result = cloud_obj.verify_credentials('meross', user)
 
-    return jsonify({'result': result})
+    print(result)
