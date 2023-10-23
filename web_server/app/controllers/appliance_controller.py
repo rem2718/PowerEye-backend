@@ -6,6 +6,7 @@ from app.models.power_model import Power
 # from app.controllers.room_controller import delete_appliance_from_room
 # from meross_interface import get_smartplugs, switch
 
+
 # Helper function to map the type of the appliances with (shiftable, phantom, none)
 def map_appliance_type_to_e_type(appliance_type):
     appliance_type_to_e_type = {
@@ -84,6 +85,7 @@ def validate_cloud_id(user, cloud_id):
         return jsonify({'message': f'Error occurred while validating cloud ID: {str(e)}'}), 500
 
 def add_appliance(user_id, name, cloud_id, type):
+
     try:
         # Retrieve the user by ID
         user = User.objects.get(id=user_id)

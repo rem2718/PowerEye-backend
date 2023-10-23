@@ -1,32 +1,44 @@
 from app import app
-from flask import request
-from app.controllers.appliance_controller import add_appliance, switch_appliance, delete_appliance, get_power, get_smartPlugs, get_appliances
+from flask import Blueprint, request, jsonify
+from app.controllers.appliance_controller import add_appliance, delete_appliance, get_most_recent_reading, update_appliance, get_appliances, switch_appliance
 
 
-@app.route('/smartplug', methods=['get'])
-def get_smartPlugs_route():
-    return get_smartPlugs()
+# Create a Blueprint for appliances
+# appliance_bp = Blueprint('appliance', __name__)
 
-@app.route('/appliance', methods=['get'])
-def get_appliances_route():
-    return get_appliances()
+# @app.route('/smartplug', methods=['get'])
+# def get_smartPlugs_route():
+#     return get_smartPlugs()
 
-
-@app.route('/appliance', methods=['POST'])
+@app.route('/add_appliance', methods=['POST'])
 def add_appliance_route():
-    name = request.json.get('name')
-    type = request.json.get('type')
-    return add_appliance(name, type)
+    return add_appliance(
+        request.json.get('user_id'),
+        request.json.get('name'),
+        request.json.get('cloud_id'),
+        request.json.get('type')
+    )
+    
+@app.route('/get_appliances/<user_id>', methods=['GET'])
+def get_appliances_route(user_id):
+    return get_appliances(user_id)
 
-@app.route('/appliance/<int:id>', methods=['PUT'])
-def switch_appliance_route(id):
-    status = request.json.get('status')
-    return switch_appliance(id, status)
+@app.route('/delete_appliance/<user_id>/<appliance_id>', methods=['DELETE'])
+def delete_appliance_route(user_id, appliance_id):
+    return delete_appliance(user_id, appliance_id)
 
-@app.route('/appliance/<int:id>', methods=['DELETE'])
-def delete_appliance_route(id):
-    return delete_appliance(id)
+@app.route('/update_appliance/<user_id>/<appliance_id>', methods=['PUT'])
+def update_appliance_route(user_id, appliance_id):
+    return update_appliance(
+        user_id,
+        appliance_id,
+        request.json.get('name')
+    )
+    
+@app.route('/get_most_recent_reading/<user_id>/<appliance_id>', methods=['GET'])
+def get_most_recent_reading_route(user_id, appliance_id):
+    return get_most_recent_reading(user_id, appliance_id)
 
-@app.route('/power/<int:id>', methods=['GET'])
-def get_power_route(id):
-    return get_power(id)
+# @app.route('/switch_appliance/<user_id>/<appliance_id>/<status>', methods=['PUT'])
+# def switch_appliance_route(user_id, appliance_id, status):
+#     return switch_appliance(user_id, appliance_id, status)
