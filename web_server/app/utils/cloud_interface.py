@@ -1,19 +1,24 @@
-# This file will be moved later on to its correct place
+from enum import Enum
+import asyncio
+import os
+
 from meross_iot.model.credentials import MerossCloudCreds
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
-import tinytuya
-import asyncio
-from types_classes import PlugType
-from flask import session
-import os
 from dotenv import load_dotenv
+from flask import session
+import tinytuya
+
 
 load_dotenv(os.path.join('.secrets', '.env'))
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
-class cloud_interface():
+class PlugType(Enum):
+    MEROSS = 1
+    TUYA = 2
+
+class Cloud_interface():
     # user for meross: {'id':_ , 'email':_, 'password':_}
     # user for tuya: {'id':_ , 'dev1':_}
     def __init__(self, event_loop:asyncio.AbstractEventLoop):
@@ -133,7 +138,6 @@ class Tuya():
             return None
             
     
-# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())    
-# loop = asyncio.get_event_loop()
-# loop.run_until_complete(verify_credentials())
-# loop.stop()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop) 
+cloud = Cloud_interface(loop)
