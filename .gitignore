@@ -1,4 +1,7 @@
 pow_env/
 __pycache__/
 .secrets/
-.vscode
+.env
+.vscode/
+models_filesystem/
+logs/
