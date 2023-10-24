@@ -1,26 +1,66 @@
 # app\controllers\room_controller.py
 from flask import jsonify
 from app.models.room_model import Room
+from app.models.user_model import User
 from app.models.appliance_model import Appliance
+from mongoengine.errors import DoesNotExist
+
 # from app.controllers.appliance_controller import switch_appliance_status
 
 # Helper function to validate room name
-def validate_room_name(name, user):
+def validate_room_name(user, name):
     try:
+        if not user:
+            return False, jsonify({'message': 'User not found'}), 404
+
         # Check if name is a string and has 2 or more characters
         if not isinstance(name, str) or len(name) < 2:
-            return False, jsonify({'message': 'Name should be a string with 2 or more characters'}), 400
+            return False, jsonify({'message': 'The room name should be a string with 2 or more characters'}), 400
 
         # Check if the name is unique among all rooms in the user's account
-        for room in user.rooms:
-            if room.name == name:
-                return False, jsonify({'message': 'Name must be unique among all rooms in your account'}), 400
+        existing_rooms = Room.objects(user_id=user.id, name=name)
+        if existing_rooms:
+            return False, jsonify({'message': 'The room name must be unique among all rooms in your account'}), 400
 
         # Return True if the name is valid and unique
         return True, None, None
 
     except Exception as e:
-        return False, jsonify({'error': str(e)}), 500
+        return False, jsonify({'message': f'Error occurred while validating name: {str(e)}'}), 500
+
+def create_room(user_id, name, appliance_ids):
+    try:
+        # Check if the user exists
+        user = User.objects.get(id=user_id)
+        if not user:
+            return jsonify({'error': 'User not found.'}), 404
+
+        # Check if there are appliances provided
+        if not appliance_ids:
+            return jsonify({'error': 'No appliances provided for the room.'}), 400
+
+        # Validate room name
+        is_valid_name, error_response, status_code = validate_room_name(user,name)
+        if not is_valid_name:
+            return error_response, status_code
+
+        for aid in appliance_ids:
+            appliance = next((app for app in user.appliances if str(app._id) == aid), None)
+            if not appliance:
+                return jsonify({'error': f'Appliance with ID {aid} not found.'}), 404
+
+
+        # Create the room
+        room = Room(name=name, appliances=appliance_ids, user_id=user_id)
+        room.save()
+
+        return jsonify({'message': f'Room {name} created successfully.'}), 201
+
+    except DoesNotExist:
+        return jsonify({'message': 'User not found'}), 404
+    
+    except Exception as e:
+        return jsonify({'message': f'Error occurred while creating room: {str(e)}'}), 500
 
 def get_room_appliances(user_id, room_id):
     try:
@@ -62,30 +102,6 @@ def get_room_appliances(user_id, room_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-def create_room(user_id, name, appliance_ids):
-    try:
-        # Check if there are appliances provided
-        if not appliance_ids:
-            return jsonify({'error': 'No appliances provided for the room.'}), 400
-
-        # Validate room name
-        if not is_valid_room_name(name):
-            return jsonify({'error': 'Room name must consist of 2 or more characters.'}), 400
-
-        # Check if all provided appliance IDs are valid
-        for appliance_id in appliance_ids:
-            if not Appliance.objects(id=appliance_id):
-                return jsonify({'error': f'Appliance with ID {appliance_id} not found.'}), 404
-
-        # Create the room
-        room = Room(name=name, appliances=appliance_ids, user_id=user_id)
-        room.save()
-
-        return jsonify({'message': f'Room {name} created successfully.'}), 201
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 # def switch_room(user_id, room_id, status):
 #     try:
 #         # Find the room by its ID and user ID

@@ -33,13 +33,14 @@ class ApplianceType(Enum):
     SEWING_MACHINE = 22
     SPORTS_MACHINE = 23
 
+    
 
 
 class Appliance(db.EmbeddedDocument):
-    _id = db.ObjectIdField(unique=True, default=None)
-    name = db.StringField(unique=True)
-    type = db.EnumField(ApplianceType)
-    cloud_id = db.StringField(unique=True)
+    _id = db.ObjectIdField(required=True,unique=True)
+    name = db.StringField(required=True, unique=True)
+    type = db.EnumField(ApplianceType,required=True)
+    cloud_id = db.StringField(unique=True,required=True)
     energy = db.FloatField(default=0.0)
     is_deleted = db.BooleanField(default=False)
     connection_status = db.BooleanField(default= True)
