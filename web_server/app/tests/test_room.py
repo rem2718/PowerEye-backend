@@ -27,9 +27,8 @@ def test_create_room():
     if not user:
         print("User not found in general test")
 
-    name = "Sample Room"
-    appliance_ids = ["6536cadde9773c46c5a5c0e6", "6536ee0bdf4c2713e782d03b"]  # Replace with actual appliance IDs
-
+    name = "Sample Room3"
+    appliance_ids = ["6536cadde9773c46c5a5c0e6"]
     # Call the function
     response, status_code = create_room(user_id, name, appliance_ids)
 
@@ -44,13 +43,11 @@ def test_create_room():
         print(response_content)
     else:
         print("Response is None")
-        
-        
-        
+
 def test_get_all_appliances():
     user_id = "6536ca862e1ebac02d028f4f"
     user = get_sample_user(user_id)
-    room_id= "6536f828a024b6b8649fe571"
+    room_id= "653781772ab70da9a4a06dbd"
 
     if not user:
         print("User not found in general test")
@@ -66,7 +63,39 @@ def test_get_all_appliances():
 
     # Print the formatted response
     print(formatted_response)
+
+def test_add_appliance_to_room():
+    user_id = "6536ca862e1ebac02d028f4f"
+    room_id = "653781772ab70da9a4a06dbd"
+    appliance_id = "6536cd3b176f465e45c0894b"
+
+    response, status_code = add_appliance_to_room(user_id, room_id, appliance_id)
+
+    # Assuming response is a Flask response object
+    response_content = response.get_json()
+
+    # Format the JSON content with indentation
+    formatted_response = json.dumps(response_content, indent=4)
+
+    # Print the formatted response
+    print(formatted_response)
+
+
+def test_get_user_rooms():
+    user_id = "6536ca862e1ebac02d028f4f"
+    response, status_code = get_all_user_rooms(user_id)
+
+    # Assuming response is a Flask response object
+    response_content = response.get_json()
+
+    # Format the JSON content with indentation
+    formatted_response = json.dumps(response_content, indent=4)
+
+    # Print the formatted response
+    print(formatted_response)
     
 if __name__ == "__main__":
-    test_get_all_appliances()
+    # test_get_all_appliances()
     # test_create_room()
+    # test_add_appliance_to_room()
+    test_get_user_rooms()

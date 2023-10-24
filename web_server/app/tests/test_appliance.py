@@ -32,8 +32,8 @@ def test_add_appliance():
         print("User not found in general test")
         return
 
-    name = "Sample Appliance1"
-    cloud_id = "sample_cloud_id2"
+    name = "Sample Appliance3"
+    cloud_id = "sample_cloud_id3"
     appliance_type = ApplianceType.AIR_PURIFIER
 
     print(appliance_type.value)
@@ -95,7 +95,6 @@ def test_update_appliance():
     else:
         print("Response is None")
 
-
 def test_switch_appliance():
     user_id = "6536ca862e1ebac02d028f4f"
     appliance_id = "6536cd3b176f465e45c0894b"  # Replace with a valid appliance ID
@@ -110,7 +109,6 @@ def test_switch_appliance():
         print(response.get_json()['message'])
     else:
         print("Response is None")
-
 
 def test_get_appliance_by_id():
     # Assuming you have a valid user_id and appliance_id for testing
