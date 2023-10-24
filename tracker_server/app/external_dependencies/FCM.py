@@ -85,6 +85,7 @@ class FCM():
         # )
 
         # response = messaging.send(message)
+        
         # self.logger.info()
         # self.logger.error()
         # check all responses status

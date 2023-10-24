@@ -88,6 +88,8 @@ class Tuya(Plug):
             connection_status = self.cloud.getconnectstatus(dev['id'])
             result = self.cloud.getstatus(dev['id'])
             power = (result['result'][4]['value']) /10.0
+            if power < 0:
+                power = 0
             on_off = result['result'][0]['value']
             return on_off, connection_status, power
         except:

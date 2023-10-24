@@ -109,7 +109,7 @@ class Updater(Task):
         energys = self.db.get_docs('Energys_test', query, projection, sort)
         return pd.DataFrame(list(energys))  
     
-    def _dump_model(type, app_id, model):
+    def _dump_model(self, type, app_id, model):
         """
         Dump machine learning model to a file.
         Args:
@@ -117,7 +117,7 @@ class Updater(Task):
             app_id: Appliance identifier.
             model: Machine learning model object.
         """
-        file_path = f'tracker_server/models_filesystem/cluster_models/{type}_models/{app_id}.pkl'
+        file_path = f'tracker_server/models_filesystem/{type}_models/{self.user_id}/{app_id}.pkl'
         file = open(file_path, "wb")
         pickle.dump(model, file)
         file.close()
@@ -138,7 +138,8 @@ class Updater(Task):
                 energy = PR.fill_na(powers[app])
                 doc[app]['imputed'] = energy
                 if app_type[app] == EType.PHANTOM.value:
-                    cluster = PR.cluster(app, powers[app]) #if its one day duration
+                    power = powers[['timestamp', app]]
+                    cluster = PR.cluster(app, power) 
                     if cluster:
                         self._dump_model('cluster', app, cluster)
                         self.logger(f'cluster_{app} is dumped successfully')

@@ -9,11 +9,16 @@ from flask import session
 import os
 from dotenv import load_dotenv
 
+# loop = asyncio.new_event_loop()
+# asyncio.set_event_loop(loop) 
+# cloud = Cloud_interface(loop)
+
+
 load_dotenv(os.path.join('.secrets', '.env'))
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
-class cloud_interface():
+class Cloud_interface():
     # user for meross: {'id':_ , 'email':_, 'password':_}
     # user for tuya: {'id':_ , 'dev1':_}
     def __init__(self, event_loop:asyncio.AbstractEventLoop):

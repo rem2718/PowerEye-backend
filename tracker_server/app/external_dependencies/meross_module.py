@@ -131,6 +131,8 @@ class Meross(Plug):
             on_off = dev.is_on()
             connection_status = dev.online_status.value == 1
             reading = await dev.async_get_instant_metrics(timeout=5)
+            if reading.power < 0:
+                reading.power = 0
             return on_off, connection_status, reading.power
         except Exception:
             self.logger.error('status error', exc_info=True)

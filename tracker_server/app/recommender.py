@@ -1,9 +1,16 @@
 import math
+
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
+import pandas as pd
+
 # NOT COMPLETE YET
 class Recommender():
     """
     A class for providing personalized recommendation based on the user appliances power usage.
     """
+    SAMPLE_MIN = 1000
+    
     @staticmethod  
     def check_goal(month_enegry:float, goal:float):
         """
@@ -67,8 +74,26 @@ class Recommender():
     
     # DONT TEST 
     @staticmethod
-    def cluster(app_id, power):
-        return False
+    def cluster(app_id, appliance):
+        appliance = appliance.dropna()
+        if appliance.shape[0] < SAMPLE_MIN:
+            return False
+        
+        value_counts = appliance[app_id].value_counts()
+        total_count = value_counts.sum()
+        weights = value_counts / total_count
+        
+        appliance = appliance.drop_duplicates(subset=[app_id])
+        X = appliance[[app_id]]
+        
+        kmeans = KMeans(n_clusters=2, n_init=10)
+        kmeans.fit(X, sample_weight=weights)
+        
+        score = silhouette_score(X, kmeans.labels_)
+        if score < 0.5:
+            return False
+   
+        return kmeans
     
     # DONT TEST 
     @staticmethod
