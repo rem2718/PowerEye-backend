@@ -4,7 +4,7 @@ from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 import tinytuya
 import asyncio
-from types_classes import PlugType
+from app.models.appliance_model import PlugType
 from flask import session
 import os
 from dotenv import load_dotenv
@@ -23,15 +23,10 @@ class cloud_interface():
         return self.loop.run_until_complete(async_func())
     
     def verify_credentials(self, type, user):
-        #match type:
-            #case PlugType.MEROSS.value: return self._run_async(Meross.verify_credentials(user))
-            #case PlugType.TUYA.value: return Tuya.verify_credentials(user)
-        if type == 'meross':
-            return self._run_async(Meross.verify_credentials(user))
-        elif type == 'tuya':
-            return Tuya.verify_credentials(user)
-        else:
-            return False
+        print('verify')
+        match type:
+            case PlugType.MEROSS.value: return self._run_async(Meross.verify_credentials(user))
+            case PlugType.TUYA.value: return Tuya.verify_credentials(user)
         
     def  get_smartplugs(self, type, user):
         match type:
