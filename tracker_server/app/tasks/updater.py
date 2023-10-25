@@ -138,7 +138,7 @@ class Updater(Task):
                 energy = PR.fill_na(powers[app])
                 doc[app]['imputed'] = energy
                 if app_type[app] == EType.PHANTOM.value:
-                    power = powers[['timestamp', app]]
+                    power = powers[app]
                     cluster = PR.cluster(app, power) 
                     if cluster:
                         self._dump_model('cluster', app, cluster)

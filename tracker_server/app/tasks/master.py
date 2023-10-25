@@ -54,14 +54,17 @@ class Master(Task):
                                 trigger='interval', minutes=1)
         self.scheduler.add_job(checker_job.run, id=f'checker_{id}', name=f'checker_{id}',
                                trigger='interval', minutes=1) 
+        # self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
+                                    #  trigger='cron', hour=0, minute=0, second=0 )    
         self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
-                                     trigger='cron', hour=0, minute=0, second=0 )     
+                                    trigger='date', run_date=datetime.now() )    
+                                     
                 
     def run(self):
         """
         Run the master task to manage job creation and scheduling.
         """
-        projection = {'email': 1, 'cloud_password': 1, 'tuya': 1, 'is_deleted': 1, 'appliances.cloud_id': 1}
+        projection = {'email': 1, 'cloud_password': 1, 'cloud_type': 1, 'is_deleted': 1, 'appliances.cloud_id': 1}
         users = self.db.get_docs('Users', projection=projection)
         self.logger.info('done retrieving users')
         
@@ -72,7 +75,7 @@ class Master(Task):
                     data = {
                         'email': user['email'], 
                         'dev1': user['appliances'][0]['cloud_id'], 
-                        'type': user['type']}
+                        'type': user['cloud_type']}
                     self._create_tasks(id, data) 
                            
             elif self.scheduler.get_job(f'collector_{id}') and user['is_deleted']:

@@ -76,15 +76,15 @@ class Recommender():
     @staticmethod
     def cluster(app_id, appliance):
         appliance = appliance.dropna()
-        if appliance.shape[0] < SAMPLE_MIN:
+        if appliance.shape[0] < Recommender.SAMPLE_MIN:
             return False
         
-        value_counts = appliance[app_id].value_counts()
+        value_counts = appliance.value_counts()
         total_count = value_counts.sum()
         weights = value_counts / total_count
         
-        appliance = appliance.drop_duplicates(subset=[app_id])
-        X = appliance[[app_id]]
+        appliance = appliance.drop_duplicates()
+        X = appliance.values.reshape(-1,1)
         
         kmeans = KMeans(n_clusters=2, n_init=10)
         kmeans.fit(X, sample_weight=weights)

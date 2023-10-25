@@ -107,11 +107,15 @@ class Checker(Task):
 
     # DONT TEST 
     def _get_model(self, app_id):
-        file_path = f'./models_filesystem/cluster_models/{self.user_id}/{app_id}.pkl'
-        file = open(file_path, "rb")
-        model = pickle.load(file)
-        file.close()
-        return model
+        try:
+            file_path = f'./models_filesystem/cluster_models/{self.user_id}/{app_id}.pkl'
+            file = open(file_path, "rb")
+            model = pickle.load(file)
+            file.close()
+            return model
+        except:
+            return False
+       
 
     def _notify_goal(self, user, cur_energy):
         """
@@ -161,7 +165,7 @@ class Checker(Task):
             self.phantom_flags[id][0] = True
         if self.phantom_flags[id][0]:
             model = self._get_model(id)
-            if PR.check_phantom(model, power, status):
+            if model and PR.check_phantom(model, power, status):
                 self.fcm.notify(self.user_id, NotifType.PHANTOM, {'app_name': name})
                 self.phantom_flags[id][0] = False
                 self.phantom_flags[id][1] = datetime.now() 
