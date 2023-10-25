@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import logging
 import pickle
+import os
  
 import pandas as pd
 
@@ -78,7 +79,7 @@ class Updater(Task):
         }
         projection = {'timestamp':0, 'user':0, '_id':0}
         sort = [('timestamp', 1)]
-        powers = self.db.get_docs('Powers_test', query, projection, sort)
+        powers = self.db.get_docs('Powers', query, projection, sort)
         return pd.DataFrame(list(powers))
       
     # check last day of month
@@ -117,7 +118,10 @@ class Updater(Task):
             app_id: Appliance identifier.
             model: Machine learning model object.
         """
-        file_path = f'tracker_server/models_filesystem/{type}_models/{self.user_id}/{app_id}.pkl'
+        folder_path = f'models_filesystem/{type}_models/{self.user_id}'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        file_path = os.path.join(folder_path, f'{app_id}.pkl')
         file = open(file_path, "wb")
         pickle.dump(model, file)
         file.close()
@@ -139,17 +143,17 @@ class Updater(Task):
                 doc[app]['imputed'] = energy
                 if app_type[app] == EType.PHANTOM.value:
                     power = powers[app]
-                    cluster = PR.cluster(app, power) 
+                    cluster = PR.cluster(power) 
                     if cluster:
                         self._dump_model('cluster', app, cluster)
-                        self.logger(f'cluster_{app} is dumped successfully')
+                        self.logger.info(f'cluster_{app} is dumped successfully')
             if energys.shape[0]:
                 forcast, threshold = PR.energy_forecasting(app, energys[app])
                 if forcast:
                     self._dump_model('forcast', app, forcast)
                     array_filter = [{'elem._id': ObjectId(app)}]
                     self.db.update('Users', self.user_id, 'appliances.$[elem].baseline_threshold', threshold, array_filter)
-                    self.logger(f'forcast_{app} is dumped successfully')
+                    self.logger.info(f'forcast_{app} is dumped successfully')
                 
         self.db.insert_doc('Energys_test', doc)
         self.date += self.day

@@ -5,7 +5,7 @@ import asyncio
 import os
 
 # Define the log file path with the current timestamp
-log_file = f'tracker_server/logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+log_file = f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
 # Configure the logging module
 logging.basicConfig(filename=log_file, level=logging.INFO,  format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -71,7 +71,7 @@ def main():
     Main function for starting the scheduler.
     This function loads environment variables, initializes the Scheduler instance, and runs the scheduler.
     """ 
-    load_dotenv(os.path.join('tracker_server', '.secrets', '.env'))
+    load_dotenv(os.path.join('.secrets', '.env'))
     URL = os.getenv('DB_URL')
     CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
 

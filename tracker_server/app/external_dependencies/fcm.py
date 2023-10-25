@@ -42,26 +42,27 @@ class FCM():
         """
         title = body = ''
         
+        # Map notification types to user-friendly titles and bodies
         match type:
-            case NotifType.CREDS: 
-                title = 'Credentials Update Required' 
-                body = 'Your Meross credentials need updating.'
-            case NotifType.DISCONNECTION: 
-                title = f'{data["app_name"]} is Offline' 
-                body = 'Please check its connection and try to reconnect it as soon as possible for improved personalized recommendations.'
-            case NotifType.GOAL: 
-                title = 'Monthly Goal'
-                body = f'Your current bill reach {data["percentage"]}% of your monthly goal'
-            case NotifType.PEAK: 
-                title = 'Peak Time'
-                body = f'Try to postpone using {data["app_name"]} after 5 PM, click here to turn it off.'
-            case NotifType.PHANTOM: 
-                title = 'Phantom Mode'
-                body = f'Your {data["app_name"]} is on phantom mode, click here to turn it off.'
-            case NotifType.BASELINE: 
-                title = ''
-                body = f'Your {data["app_name"]} exceeds its daily baseline try to reduse using it today.'
-        
+            case NotifType.CREDS:
+                title = 'Update Your Login'
+                body = 'Please update your login information for Meross.'
+            case NotifType.DISCONNECTION:
+                title = 'Device Not Working'
+                body = f'Your {data["app_name"]} is currently not working. Check its connection and fix it for better recommandetions.'
+            case NotifType.GOAL:
+                title = 'Monthly Usage Goal'
+                body = f"You're close to reaching {data['percentage']}% of your monthly usage goal."
+            case NotifType.PEAK:
+                title = 'Peak Usage Alert'
+                body = f'Try to use {data["app_name"]} after 5 PM. Click here to turn it off.'
+            case NotifType.PHANTOM:
+                title = 'Ghost Mode Active'
+                body = f'{data["app_name"]} is in ghost mode. Click here to turn it off.'
+            case NotifType.BASELINE:
+                title = 'Using Too Much'
+                body = f'{data["app_name"]} used more than it should today. Try to use it less.'
+
         return title, body  
         
     def notify(self, user, type, data={}):
@@ -75,19 +76,16 @@ class FCM():
         token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
         title, body = self.map_message(type, data)
         
-        self.logger.info(f'notify: {type}', data)
-        # message = messaging.Message(
-        #     data = {
-        #         "title": title,
-        #         "body": body,
-        #     },
-        #     token = token,
-        # )
-
-        # response = messaging.send(message)
-        
-        # self.logger.info()
-        # self.logger.error()
-        # check all responses status
+        self.logger.info(f'notify: {type} {data}')
+        message = messaging.Message(
+        data={
+            "title": title,
+            "body": body,
+            },
+        token=token,
+        )
+        response = messaging.send(message)
+        self.logger.info(f"Notification sent with response: {response}")
+        return response
 
  

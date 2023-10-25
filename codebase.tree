@@ -7,7 +7,7 @@
 ├── tracker_server
 │  ├── .secrets
 │  │  ├── .env
-│  │  └── powereye-392ff-firebase-adminsdk-tiloa-fb7741022f.json
+│  │  └── firebase-secret-key.json
 │  ├── app
 │  │  ├── external_dependencies
 │  │  │  ├── fcm.py
