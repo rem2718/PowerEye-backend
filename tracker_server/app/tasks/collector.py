@@ -41,7 +41,7 @@ class Collector(Task):
         self.flags = {}
         self.logger = logging.getLogger(__name__)    
     
-    def _get_appliances(self, id):
+    def _get_appliances(self):
         """
         Get the appliances associated with the user.
         Returns:
