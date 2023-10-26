@@ -1,14 +1,10 @@
-import  logging
-
-from firebase_admin import credentials
-from firebase_admin import messaging
+import logging
+from firebase_admin import credentials, messaging
 import firebase_admin
-
 from app.interfaces.db import DB
 from app.types_classes import NotifType
 
-# NOT COMPLETE YET
-class FCM():
+class FCM:
     """
     Firebase Cloud Messaging (FCM) service for sending notifications.
     This class provides methods for initializing FCM, mapping notification messages based on types,
@@ -19,7 +15,7 @@ class FCM():
         logger (logging.Logger): The logger for logging messages.
     """
     
-    def __init__(self, cred, db:DB):
+    def __init__(self, cred, db: DB):
         """
         Constructor for the FCM class.
         Args:
@@ -30,7 +26,7 @@ class FCM():
         firebase_admin.initialize_app(creds)
         self.db = db
         self.logger = logging.getLogger(__name__)
-    
+
     def map_message(self, type, data=None):
         """
         Map notification messages based on the notification type and data.
@@ -73,7 +69,10 @@ class FCM():
             type (NotifType): The type of notification.
             data (dict, optional): Additional data for customizing the message.
         """
+        # Get the user's registration token from the database
         token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
+
+        # Map the notification type to a title and body
         title, body = self.map_message(type, data)
         
         self.logger.info(f'notify: {type} {data}')
@@ -88,4 +87,3 @@ class FCM():
         self.logger.info(f"Notification sent with response: {response}")
         return response
 
- 
