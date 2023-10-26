@@ -100,29 +100,50 @@ def get_room_appliances(user_id, room_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# def switch_room(user_id, room_id, status):
-#     try:
-#         # Find the room by its ID and user ID
-#         room = Room.objects(user_id=user_id, id=room_id).first()
+def switch_room(user_id, room_id, new_status):
+    from app.controllers.appliance_controller import switch_appliance
+    try:
+        # Find and validate the user by ID
+        user = User.objects.get(id=user_id)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
 
-#         if not room:
-#             return jsonify({'message': 'Room not found'}), 404
+        # Find and validate the room
+        room = Room.objects(id=room_id, user_id=user_id).first()
+        if not room:
+            return jsonify({'error': 'Room not found or does not belong to the user'}), 404
+        
+        # Check if the status is a valid value (assuming it's a boolean)
+        if not isinstance(new_status, bool):
+            return jsonify({'error': 'Invalid status value. It should be a boolean (True or False)'}), 400
+        
+        # Check if there are appliances in the room
+        if not room.appliances:
+            return jsonify({'message': 'No appliances in the room.'}), 200
+            
+        # Initialize a list to track appliance update status
+        appliance_update_status = []
 
-#         for appliance_id in room.appliances:
-#             appliance = Appliance.objects.get(id=appliance_id)
+        # Retrieve appliances for the specified room
+        for appliance_id in room.appliances:
+            update_result = switch_appliance(user_id, str(appliance_id), new_status)
 
-#             if appliance:
-#                 switch_appliance_status(appliance.id, status)
-#             else:
-#                 return jsonify({'message': f'Appliance with ID {appliance_id} not found.'}), 404
+            if update_result:
+                appliance_update_status.append('updated')
+            else:
+                appliance_update_status.append('not updated')
 
-#         return jsonify({'message': 'Room appliances status updated successfully'}), 200
+        # Check if all appliances were successfully updated
+        if all(status == 'updated' for status in appliance_update_status):
+            return jsonify({'message': 'Room appliances status updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Some appliances were not updated', 'details': appliance_update_status}), 400
 
-#     except DoesNotExist:
-#         return jsonify({'message': 'Room not found'}), 404
+    except DoesNotExist:
+        return jsonify({'message': 'Room not found'}), 404
 
-#     except Exception as e:
-#         return jsonify({'message': f'Error occurred while switching room appliances status: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'message': f'Error occurred while switching room appliances status: {str(e)}'}), 500
 
 def add_appliance_to_room(user_id, room_id, appliance_id):
     try:
@@ -154,7 +175,6 @@ def add_appliance_to_room(user_id, room_id, appliance_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 def get_all_user_rooms(user_id):
     try:
         # Find and validate the user by ID
@@ -172,8 +192,12 @@ def get_all_user_rooms(user_id):
             room_data = {
                 'id': str(room.id),
                 'name': room.name,
-                'appliances': room.appliances
+                'appliances': []  # Initialize an empty list for appliance IDs
             }
+
+            for appliance_id in room.appliances:
+                room_data['appliances'].append(str(appliance_id))
+
             room_list.append(room_data)
 
         return jsonify({'rooms': room_list}), 200
@@ -183,14 +207,23 @@ def get_all_user_rooms(user_id):
     
 def delete_appliance_from_room(user_id, room_id, appliance_id):
     try:
-        # Find the room by its ID and user ID
-        room = Room.objects(user_id=user_id, id=room_id).first()
+        # Find and validate the user by ID
+        user = User.objects.get(id=user_id)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
 
+        # Find and validate the room
+        room = Room.objects(id=room_id, user_id=user_id).first()
         if not room:
-            return jsonify({'message': 'Room not found.'}), 404
+            return jsonify({'error': 'Room not found or does not belong to the user'}), 404
 
-        if appliance_id in room.appliances:
-            room.appliances.remove(appliance_id)
+        # Find and validate if the user has that appliance
+        appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
+        if not appliance:
+            return jsonify({'error': 'Appliance not found for the user'}), 404 
+        
+        if appliance._id in room.appliances:
+            room.appliances.remove(appliance._id)
             room.save()
 
             return jsonify({'message': 'Appliance removed from room successfully.'}), 200
@@ -205,16 +238,20 @@ def delete_appliance_from_room(user_id, room_id, appliance_id):
 
 def update_room_name(user_id, room_id, new_name):
     try:
-        # Find the room by its ID and user ID
-        room = Room.objects(user_id=user_id, id=room_id).first()
+        # Find and validate the user by ID
+        user = User.objects.get(id=user_id)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
 
+        # Find and validate the room
+        room = Room.objects(id=room_id, user_id=user_id).first()
         if not room:
-            return jsonify({'error': 'Room not found.'}), 404
+            return jsonify({'error': 'Room not found or does not belong to the user'}), 404
 
-        # Validate the new room name
-        valid, response, status_code = validate_room_name(new_name, current_user)
-        if not valid:
-            return response, status_code
+        # Validate name
+        is_valid_name, error_response, status_code = validate_room_name(user,new_name)
+        if not is_valid_name:
+            return error_response, status_code
 
         room.name = new_name
         room.save()
@@ -225,15 +262,19 @@ def update_room_name(user_id, room_id, new_name):
         return jsonify({'error': 'Room not found.'}), 404
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        return jsonify({'message': f'Error occurred while updating room: {str(e)}'}), 500
+    
 def delete_room(user_id, room_id):
     try:
-        # Find the room by its ID and user ID
-        room = Room.objects(user_id=user_id, id=room_id).first()
+        # Find and validate the user by ID
+        user = User.objects.get(id=user_id)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
 
+        # Find and validate the room
+        room = Room.objects(id=room_id, user_id=user_id).first()
         if not room:
-            return jsonify({'message': 'Room not found'}), 404
+            return jsonify({'error': 'Room not found or does not belong to the user'}), 404
 
         room.delete()
 

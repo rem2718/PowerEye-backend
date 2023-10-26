@@ -32,9 +32,9 @@ def test_add_appliance():
         print("User not found in general test")
         return
 
-    name = "Sample Appliance3"
-    cloud_id = "sample_cloud_id3"
-    appliance_type = ApplianceType.AIR_PURIFIER
+    name = "Sample Appliance8"
+    cloud_id = "sample_cloud_id8"
+    appliance_type = ApplianceType.CAMERA
 
     print(appliance_type.value)
     print(map_appliance_type_to_e_type(appliance_type).value)
@@ -68,12 +68,10 @@ def test_get_all_appliances(user_id):
 
 def test_delete_appliance():
     user_id = "6536ca862e1ebac02d028f4f"
-    appliance_id = "6536cadde9773c46c5a5c0e6"  # Replace with a valid appliance ID
+    appliance_id = "65398f97e4da3793b9532605"  # Replace with a valid appliance ID
 
     response, status_code = delete_appliance(user_id, appliance_id)
 
-    print(response)
-    print(status_code)
 
     if response is not None:
         print(response.get_json()['message'])
@@ -128,11 +126,11 @@ def test_get_appliance_by_id():
     print(formatted_response)
 
 if __name__ == "__main__":
-    test_add_appliance()
+    # test_add_appliance()
     # test_appliance_type_mapping()
     # test_get_all_appliances("6536ca862e1ebac02d028f4f")
     # test_add_user()
-    # test_delete_appliance()
+    test_delete_appliance()
     # update_appliance_name()
     # test_switch_appliance()
     # test_get_appliance_by_id()

@@ -1,55 +1,66 @@
 # app\controllers\user_controller.py
 from flask import jsonify
-from app.models.user_model import User
-from app.forms.login_form import LoginForm
-from app.forms.signup_form import SignupForm
-
-
+from app.models.user_model import User,CloudType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 
 
 
 # Function to validate PowerEye system password
-def validate_power_eye_password(password):
-    # Define complexity criteria
-    if (
-        len(password) < 8
-        or not any(char.isupper() for char in password)
-        or not any(char.islower() for char in password)
-        or not any(char.isdigit() for char in password)
-        or not any(char in '!@#$%^&*()-_+=<>,.?/:;{}[]~' for char in password)
-    ):
-        return False
+def validate_password(password):
+    try:
+        # Define complexity criteria
+        if (
+            len(password) < 8
+            or not any(char.isupper() for char in password)
+            or not any(char.islower() for char in password)
+            or not any(char.isdigit() for char in password)
+            or not any(char in '!@#$%^&*()-_+=<>,.?/:;{}[]~' for char in password)
+        ):
+            return False, jsonify({'message': 'Password should contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one digit, and one special character'}), 400
 
-    return True
+        # Return True if the password meets the complexity criteria
+        return True, None, None
 
+    except Exception as e:
+        return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
+    
+    
 # Function to validate Meross credentials (email and password)
 def validate_meross_credentials(email, password):
-    # Implement validation using Meross interface
-    # Return True if valid, False otherwise
-    return True  # Placeholder, replace with actual validation logic
+    try:
+        # Implement validation using Meross interface
+        # Return True if valid, False otherwise
+        return True  # Placeholder, replace with actual validation logic
+
+    except Exception as e:
+        return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
 
 
 def signup(email, power_eye_password, meross_password):
-    # vlidate email uniqueness only with not deleted users 
-    
     try:
         # Validate PowerEye system password
-        if not validate_power_eye_password(power_eye_password):
-            return jsonify({'error': 'Invalid PowerEye system password.'}), 400
+        is_valid_pass, error_response, status_code = validate_password(power_eye_password)
+        if not is_valid_pass:
+            return error_response, status_code
 
         # Validate Meross credentials
         if not validate_meross_credentials(email, meross_password):
             return jsonify({'error': 'Invalid Meross credentials.'}), 400
 
+        # Check if the email is already associated with a non-deleted user
+        existing_user = User.objects(email=email, is_deleted=False).first()
+        if existing_user:
+            return jsonify({'error': 'Email is already registered.'}), 400
+
+        # Encrypt the Power Eye password
+        hashed_password = bcrypt.generate_password_hash(power_eye_password).decode('utf-8')
+        
         # Create and save the user
         user = User(
             email=email,
-            password=power_eye_password,
+            password=hashed_password,
             cloud_password=meross_password,
-            cloud_type=CloudType.MERROS
-            # Add other fields as needed
         )
         user.save()
 

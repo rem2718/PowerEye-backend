@@ -2,13 +2,10 @@
 from flask import jsonify
 from app.models.appliance_model import Appliance,ApplianceType, EType
 from app.models.user_model import User
-from app.models.power_model import Power
+from app.models.room_model import Room
 from mongoengine.errors import DoesNotExist
 from bson import ObjectId
 
-
-
-# from app.controllers.room_controller import delete_appliance_from_room
 # from meross_interface import get_smartplugs, switch
 
 
@@ -84,7 +81,7 @@ def validate_cloud_id(user, cloud_id):
                 return False, jsonify({'message': 'Smart plug is already in use'}), 400
             
         return True, None, None
-   
+    
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
 
@@ -208,6 +205,8 @@ def get_all_appliances(user_id):
         return jsonify({'message': f'Error occurred while retrieving appliances: {str(e)}'}), 500
 
 def delete_appliance(user_id, appliance_id):
+    from app.controllers.appliance_controller import delete_appliance_from_room
+
     try:
         # Get the user by ID
         user = User.objects.get(id=user_id)
@@ -224,16 +223,23 @@ def delete_appliance(user_id, appliance_id):
         # Soft delete the appliance by marking it as deleted
         appliance.is_deleted = True
         user.save()
-        # # delete_appliance_from_room
-        # delete_appliance_from_room(user_id, room_id, appliance_id)
+        
+        
+        # Check if the appliance is associated with any rooms
+        rooms_with_appliance = Room.objects(appliances=appliance_id)
+        if not rooms_with_appliance:
+            return jsonify({'message': 'Appliance deleted, but it is not associated with any rooms'}), 200
+
+        # Delete the appliance from each room where it's associated
+        for room in rooms_with_appliance:
+            delete_appliance_from_room(user_id, str(room.id), appliance_id)
 
         return jsonify({'message': 'Appliance deleted successfully'}), 200
-    
 
     except Exception as e:
         return jsonify({'message': f'Error occurred while deleting appliance: {str(e)}'}), 500
 
-def update_appliance_name(user_id, appliance_id, name):
+def update_appliance_name(user_id, appliance_id, new_name):
     try:
         # Get the user by ID
         user = User.objects.get(id=user_id)
@@ -248,15 +254,15 @@ def update_appliance_name(user_id, appliance_id, name):
             return jsonify({'message': 'Appliance not found'}), 404
 
         # Validate name
-        is_valid_name, error_response, status_code = validate_name(user,name)
+        is_valid_name, error_response, status_code = validate_name(user,new_name)
         if not is_valid_name:
             return error_response, status_code
 
         # Update the name of the appliance
-        appliance.name = name
+        appliance.name = new_name
         user.save()
 
-        return jsonify({'message': 'Appliance updated successfully'}), 200
+        return jsonify({'message': f'Appliance name updated successfully to {new_name}.'}), 200
 
     except Exception as e:
         return jsonify({'message': f'Error occurred while updating appliance: {str(e)}'}), 500
@@ -277,7 +283,12 @@ def switch_appliance(user_id, appliance_id, status):
 
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id
-
+        
+        # Check if the status is a valid value (assuming it's a boolean)
+        if not isinstance(status, bool):
+            return jsonify({'error': 'Invalid status value. It should be a boolean (True or False)'}), 400
+        
+        
         # Switch based on the cloud ID and status
         # switch(cloud_id, status)
 

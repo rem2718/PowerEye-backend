@@ -37,10 +37,10 @@ class ApplianceType(Enum):
 
 
 class Appliance(db.EmbeddedDocument):
-    _id = db.ObjectIdField(required=True,unique=True)
-    name = db.StringField(required=True, unique=True)
-    type = db.EnumField(ApplianceType,required=True)
-    cloud_id = db.StringField(unique=True,required=True)
+    _id = db.StringField(default=None)
+    name = db.StringField()
+    type = db.EnumField(ApplianceType)
+    cloud_id = db.StringField()
     energy = db.FloatField(default=0.0)
     is_deleted = db.BooleanField(default=False)
     connection_status = db.BooleanField(default= True)

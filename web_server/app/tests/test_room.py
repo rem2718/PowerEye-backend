@@ -44,7 +44,7 @@ def test_create_room():
     else:
         print("Response is None")
 
-def test_get_all_appliances():
+def test_get_room_appliances():
     user_id = "6536ca862e1ebac02d028f4f"
     user = get_sample_user(user_id)
     room_id= "653781772ab70da9a4a06dbd"
@@ -66,8 +66,8 @@ def test_get_all_appliances():
 
 def test_add_appliance_to_room():
     user_id = "6536ca862e1ebac02d028f4f"
-    room_id = "653781772ab70da9a4a06dbd"
-    appliance_id = "6536cd3b176f465e45c0894b"
+    room_id = "6536f828a024b6b8649fe571"
+    appliance_id = "65398f97e4da3793b9532605"
 
     response, status_code = add_appliance_to_room(user_id, room_id, appliance_id)
 
@@ -80,8 +80,7 @@ def test_add_appliance_to_room():
     # Print the formatted response
     print(formatted_response)
 
-
-def test_get_user_rooms():
+def test_get_all_user_rooms():
     user_id = "6536ca862e1ebac02d028f4f"
     response, status_code = get_all_user_rooms(user_id)
 
@@ -93,9 +92,58 @@ def test_get_user_rooms():
 
     # Print the formatted response
     print(formatted_response)
+
+def test_delete_appliance_from_room():
+    user_id = "6536ca862e1ebac02d028f4f"
+    room_id = "6536f828a024b6b8649fe571"
+    appliance_id = "65398f97e4da3793b9532605"
+
+    response, status_code = delete_appliance_from_room(user_id, room_id, appliance_id)
+
+    # Print the response
+    if response is not None:
+        print(response.get_json()['message'])
     
-if __name__ == "__main__":
-    # test_get_all_appliances()
+def test_update_room_name():
+    user_id = "6536ca862e1ebac02d028f4f"
+    room_id = "653781772ab70da9a4a06dbd"
+    response, status_code = update_room_name(user_id,room_id,'new name room')
+    
+    # Print the response
+    if response is not None:
+        print(response.get_json()['message'])
+
+def test_delete_room():
+    user_id = "6536ca862e1ebac02d028f4f"
+    room_id = "653781772ab70da9a4a06dbd"
+    response, status_code = delete_room(user_id,room_id)
+    
+    # Print the response
+    if response is not None:
+        print(response.get_json()['message'])
+
+def test_switch_room():
+    user_id = "6536ca862e1ebac02d028f4f"
+    room_id = "65376316a49eef060e0152be"  # Replace with a valid appliance ID
+    new_status = False
+
+    response, status_code = switch_room(user_id, room_id, new_status)
+
+    print(response)
+    print(status_code)
+
+    if response is not None:
+        print(response.get_json()['message'])
+    else:
+        print("Response is None")
+    
+
+# if __name__ == "__main__":
+    # test_get_room_appliances()
     # test_create_room()
     # test_add_appliance_to_room()
-    test_get_user_rooms()
+    # test_get_all_user_rooms()
+    # test_delete_appliance_from_room()
+    # test_update_room_name()
+    # test_delete_room()
+    test_switch_room()

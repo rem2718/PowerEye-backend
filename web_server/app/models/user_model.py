@@ -14,11 +14,11 @@ class CloudType(Enum):
 
 
 class User(db.Document):
-    email = db.EmailField(required=True, unique=True)
+    email = db.EmailField(required=True)
     password = db.StringField(required=True)
     username = db.StringField()
     is_deleted = db.BooleanField(default=False)
-    appliances = db.ListField(EmbeddedDocumentField(Appliance))
+    appliances = db.ListField(EmbeddedDocumentField(Appliance),required=False,default=None)
     cloud_type= db.EnumField(CloudType, default=CloudType.MERROS)
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
