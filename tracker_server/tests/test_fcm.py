@@ -27,8 +27,10 @@ def test_map_message(my_fcm, type, data, output):
     
 def test_notify(my_fcm):
     assert 'powereye1-e599e' in my_fcm.notify('test user', NotifType.PEAK, {'app_name':'tv'})
+    
+    
 from unittest.mock import Mock
-from app.external_dependencies.FCM import FCM
+from app.external_dependencies.fcm import FCM
 from app.types_classes import NotifType
 
 
