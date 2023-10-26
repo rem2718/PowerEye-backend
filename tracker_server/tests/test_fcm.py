@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 
 from dotenv import load_dotenv
@@ -30,6 +31,9 @@ def test_notify(my_fcm):
     
     
 from unittest.mock import Mock
+=======
+from unittest.mock import Mock
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
 from app.external_dependencies.fcm import FCM
 from app.types_classes import NotifType
 

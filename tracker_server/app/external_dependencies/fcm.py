@@ -37,7 +37,11 @@ class FCM:
             tuple: A tuple containing the title and body of the notification message.
         """
         title = body = ''
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
         # Map notification types to user-friendly titles and bodies
         match type:
             case NotifType.CREDS:
@@ -45,13 +49,21 @@ class FCM:
                 body = 'Please update your login information for Meross.'
             case NotifType.DISCONNECTION:
                 title = 'Device Not Working'
+<<<<<<< HEAD
                 body = f'Your {data["app_name"]} is currently not working. Check its connection and fix it for better recommandetions.'
+=======
+                body = f'Your {data["app_name"]} is currently not working. Check its connection and fix it for better suggestions.'
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
             case NotifType.GOAL:
                 title = 'Monthly Usage Goal'
                 body = f"You're close to reaching {data['percentage']}% of your monthly usage goal."
             case NotifType.PEAK:
                 title = 'Peak Usage Alert'
+<<<<<<< HEAD
                 body = f'Try to use {data["app_name"]} after 5 PM. Click here to turn it off.'
+=======
+                body = f'Try not to use {data["app_name"]} after 5 PM. Click here to turn it off.'
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
             case NotifType.PHANTOM:
                 title = 'Ghost Mode Active'
                 body = f'{data["app_name"]} is in ghost mode. Click here to turn it off.'
@@ -59,8 +71,13 @@ class FCM:
                 title = 'Using Too Much'
                 body = f'{data["app_name"]} used more than it should today. Try to use it less.'
 
+<<<<<<< HEAD
         return title, body  
         
+=======
+        return title, body
+
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
     def notify(self, user, type, data={}):
         """
         Send a notification to a user.
@@ -74,8 +91,16 @@ class FCM:
 
         # Map the notification type to a title and body
         title, body = self.map_message(type, data)
+<<<<<<< HEAD
         
         self.logger.info(f'notify: {type} {data}')
+=======
+
+        # Log the notification
+        self.logger.info(f'notify: {type} {data}')  # Combined 'type' and 'data' in a single f-string
+
+        # Create a message with the title and body
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
         message = messaging.Message(
         data={
             "title": title,
@@ -84,6 +109,12 @@ class FCM:
         token=token,
         )
         response = messaging.send(message)
+<<<<<<< HEAD
         self.logger.info(f"Notification sent with response: {response}")
         return response
+=======
+
+        # Log response status
+        self.logger.info(f"Notification sent with response: {response}")
+>>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
 
