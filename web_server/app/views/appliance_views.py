@@ -1,44 +1,39 @@
-from app import app
 from flask import Blueprint, request, jsonify
-from app.controllers.appliance_controller import add_appliance, delete_appliance, get_most_recent_reading, update_appliance, get_appliances, switch_appliance
+from app.controllers.appliance_controller import *
 
+# Create a Blueprint to organize your routes
+appliance_views = Blueprint('appliance_views', __name__)
 
-# Create a Blueprint for appliances
-# appliance_bp = Blueprint('appliance', __name__)
-
-# @app.route('/smartplug', methods=['get'])
-# def get_smartPlugs_route():
-#     return get_smartPlugs()
-
-@app.route('/add_appliance', methods=['POST'])
+# Define routes using the imported functions
+@appliance_views.route('/add_appliance', methods=['POST'])
 def add_appliance_route():
-    return add_appliance(
-        request.json.get('user_id'),
-        request.json.get('name'),
-        request.json.get('cloud_id'),
-        request.json.get('type')
-    )
-    
-@app.route('/get_appliances/<user_id>', methods=['GET'])
-def get_appliances_route(user_id):
-    return get_appliances(user_id)
+    data = request.get_json()
+    user_id = data['user_id']
+    name = data['name']
+    cloud_id = data['cloud_id']
+    type = data['type']
+    return add_appliance(user_id, name, cloud_id, type)
 
-@app.route('/delete_appliance/<user_id>/<appliance_id>', methods=['DELETE'])
+@appliance_views.route('/get_appliance/<user_id>/<appliance_id>', methods=['GET'])
+def get_appliance_by_id_route(user_id, appliance_id):
+    return get_appliance_by_id(user_id, appliance_id)
+
+@appliance_views.route('/get_all_appliances/<user_id>', methods=['GET'])
+def get_all_appliances_route(user_id):
+    return get_all_appliances(user_id)
+
+@appliance_views.route('/delete_appliance/<user_id>/<appliance_id>', methods=['DELETE'])
 def delete_appliance_route(user_id, appliance_id):
     return delete_appliance(user_id, appliance_id)
 
-@app.route('/update_appliance/<user_id>/<appliance_id>', methods=['PUT'])
-def update_appliance_route(user_id, appliance_id):
-    return update_appliance(
-        user_id,
-        appliance_id,
-        request.json.get('name')
-    )
-    
-@app.route('/get_most_recent_reading/<user_id>/<appliance_id>', methods=['GET'])
-def get_most_recent_reading_route(user_id, appliance_id):
-    return get_most_recent_reading(user_id, appliance_id)
+@appliance_views.route('/update_appliance_name/<user_id>/<appliance_id>', methods=['PUT'])
+def update_appliance_name_route(user_id, appliance_id):
+    data = request.get_json()
+    new_name = data['new_name']
+    return update_appliance_name(user_id, appliance_id, new_name)
 
-# @app.route('/switch_appliance/<user_id>/<appliance_id>/<status>', methods=['PUT'])
-# def switch_appliance_route(user_id, appliance_id, status):
-#     return switch_appliance(user_id, appliance_id, status)
+@appliance_views.route('/switch_appliance/<user_id>/<appliance_id>', methods=['PUT'])
+def switch_appliance_route(user_id, appliance_id):
+    data = request.get_json()
+    status = data['status']
+    return switch_appliance(user_id, appliance_id, status)

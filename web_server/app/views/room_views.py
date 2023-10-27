@@ -1,31 +1,46 @@
-from app import app
-from flask import request
-from app.controllers.room_controller import create_room, switch_room, add_appliance_to_room, delete_room_appliance, get_rooms, get_room_appliances
+from flask import Blueprint, request, jsonify
+from app.controllers.room_controller import *
 
+# Create a Blueprint to organize your routes
+room_views = Blueprint('room_views', __name__)
 
-@app.route('/room', methods=['POST'])
+# Define routes using the imported functions
+@room_views.route('/create_room', methods=['POST'])
 def create_room_route():
-    name = request.json.get('name')
-    appliance_ids = request.json.get('appliance_ids')
-    return create_room(name, appliance_ids)
+    data = request.get_json()
+    user_id = data['user_id']
+    name = data['name']
+    appliance_ids = data['appliance_ids']
+    return create_room(user_id, name, appliance_ids)
 
-@app.route('/room/<int:id>', methods=['PUT'])
-def switch_room_route(id):
-    status = request.json.get('status')
-    return switch_room(id, status)
+@room_views.route('/get_room_appliances/<user_id>/<room_id>', methods=['GET'])
+def get_room_appliances_route(user_id, room_id):
+    return get_room_appliances(user_id, room_id)
 
-@app.route('/room/<int:room_id>/appliance/<int:appliance_id>', methods=['PUT'])
-def add_appliance_to_room_route(room_id, appliance_id):
-    return add_appliance_to_room(room_id, appliance_id)
+@room_views.route('/switch_room/<user_id>/<room_id>', methods=['PUT'])
+def switch_room_route(user_id, room_id):
+    data = request.get_json()
+    new_status = data['new_status']
+    return switch_room(user_id, room_id, new_status)
 
-@app.route('/room/<int:room_id>/appliance/<int:appliance_id>', methods=['DELETE'])
-def delete_room_appliance_route(room_id, appliance_id):
-    return delete_room_appliance(room_id, appliance_id)
+@room_views.route('/add_appliance_to_room/<user_id>/<room_id>/<appliance_id>', methods=['POST'])
+def add_appliance_to_room_route(user_id, room_id, appliance_id):
+    return add_appliance_to_room(user_id, room_id, appliance_id)
 
-@app.route('/rooms', methods=['GET'])
-def get_rooms_route():
-    return get_rooms()
+@room_views.route('/get_all_user_rooms/<user_id>', methods=['GET'])
+def get_all_user_rooms_route(user_id):
+    return get_all_user_rooms(user_id)
 
-@app.route('/room/<int:room_id>/appliances', methods=['GET'])
-def get_room_appliances_route(room_id):
-    return get_room_appliances(room_id)
+@room_views.route('/delete_appliance_from_room/<user_id>/<room_id>/<appliance_id>', methods=['DELETE'])
+def delete_appliance_from_room_route(user_id, room_id, appliance_id):
+    return delete_appliance_from_room(user_id, room_id, appliance_id)
+
+@room_views.route('/update_room_name/<user_id>/<room_id>', methods=['PUT'])
+def update_room_name_route(user_id, room_id):
+    data = request.get_json()
+    new_name = data['new_name']
+    return update_room_name(user_id, room_id, new_name)
+
+@room_views.route('/delete_room/<user_id>/<room_id>', methods=['DELETE'])
+def delete_room_route(user_id, room_id):
+    return delete_room(user_id, room_id)

@@ -1,62 +1,62 @@
-from app import app
-from flask import request
-from app.controllers.user_controller import login, signup, logout,update_user_info, delete_user, get_user_info,set_goal, get_goal,delete_goal,get_rooms,get_appliances
+# app\views\user_views.py
+from flask import Blueprint, request, jsonify
+from app.controllers.user_controller import *
 
+# Create a Blueprint to organize your routes
+user_views = Blueprint('user_views', __name__)
 
-@app.route('/user/login', methods=['POST'])
+# Define routes using the imported functions
+
+@user_views.route('/signup', methods=['POST'])
+def signup_route():
+    data = request.get_json()
+    email = data['email']
+    power_eye_password = data['power_eye_password']
+    meross_password = data['meross_password']
+    return signup(email, power_eye_password, meross_password)
+
+@user_views.route('/login', methods=['POST'])
 def login_route():
-    email = request.json.get('email')
-    password = request.json.get('password')
+    data = request.get_json()
+    email = data['email']
+    password = data['password']
     return login(email, password)
 
-@app.route('/user/signup', methods=['POST'])
-def signup_route():
-    email = request.json.get('email')
-    password = request.json.get('password')
-    meross_password = request.json.get('meross_password')
-    return signup(email, password, meross_password)
-
-@app.route('/user/logout', methods=['GET'])
+@user_views.route('/logout', methods=['POST'])
 def logout_route():
     return logout()
 
+@user_views.route('/user/<user_id>', methods=['GET'])
+def get_user_info_route(user_id):
+    return get_user_info(user_id)
 
-@app.route('/user/info', methods=['GET'])
-def get_user_info_route():
-    return get_user_info()
+@user_views.route('/user/<user_id>', methods=['PUT'])
+def update_user_info_route(user_id):
+    data = request.get_json()
+    meross_password = data.get('meross_password')
+    power_eye_password = data.get('power_eye_password')
+    username = data.get('username')
+    profile_picture = data.get('profile_picture')
+    return update_user_info(user_id, meross_password, power_eye_password, username, profile_picture)
 
-@app.route('/user/info', methods=['PUT'])
-def update_user_info_route():
-    username = request.json.get('username')
-    password = request.json.get('password')
-    meross_password = request.json.get('meross_password')
-    profile_pic = request.json.get('profile_pic')
-    return update_user_info(username, password, meross_password, profile_pic)
+@user_views.route('/user/<user_id>', methods=['DELETE'])
+def delete_user_route(user_id):
+    return delete_user(user_id)
 
-@app.route('/user/delete', methods=['DELETE'])
-def delete_user_route():
-    return delete_user()
-
-
-@app.route('/user/goal', methods=['POST'])
-def set_goal_route():
-    energy = request.json.get('energy')
-    return set_goal(energy)
-
-@app.route('/user/goal', methods=['GET'])
+@user_views.route('/goal', methods=['GET'])
 def get_goal_route():
     return get_goal()
 
-@app.route('/user/goal', methods=['DELETE'])
+@user_views.route('/goal', methods=['POST'])
+def set_goal_route():
+    data = request.get_json()
+    energy = data['energy']
+    return set_goal(energy)
+
+@user_views.route('/goal', methods=['DELETE'])
 def delete_goal_route():
     return delete_goal()
 
-
-@app.route('/user/rooms', methods=['GET'])
-def get_rooms():
-    return get_rooms()
-
-
-@app.route('/user/appliances', methods=['GET'])
-def get_appliances():
-    return get_appliances()
+@user_views.route('/rooms', methods=['GET'])
+def get_rooms_route():
+    return jsonify(get_rooms())

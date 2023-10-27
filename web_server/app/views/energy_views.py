@@ -1,44 +1,56 @@
 # app\views\energy_views.py
-from app import app
-from flask import request
-from app.controllers.energy_controller import get_appliance_daily_energy, get_appliance_weekly_energy, get_appliance_monthly_energy,get_appliance_yearly_energy, get_room_daily_energy,get_room_weekly_energy,get_room_monthly_energy,get_room_yearly_energy, get_total_daily_energy, get_total_weekly_energy,get_total_monthly_energy, get_total_yearly_energy
+from flask import Blueprint, jsonify, request
+from app.controllers.energy_controller import *
 
+# Create a Blueprint to organize your routes
+energy_views = Blueprint('energy_views', __name__)
 
-@app.route('/energy/appliance/<string:timeframe>/<int:timeSinceCurrent>', methods=['GET']) 
-def appliance_energy_route(time_frame, time_since_current):
-    if time_frame == "Daily":
-        return get_appliance_daily_energy(time_since_current)
-    elif time_frame == "Weekly":
-        return get_appliance_weekly_energy(time_since_current)
-    elif time_frame == "Monthly":
-        return get_appliance_monthly_energy(time_since_current)
-    elif time_frame == "Yearly":
-        return get_appliance_yearly_energy(time_since_current)
-    else:
-        return {'error': 'Invalid timeframe specified'}
+# Define routes using the imported functions
 
-@app.route('/energy/room/<string:timeframe>/<int:timeSinceCurrent>', methods=['GET']) 
-def room_energy_route(time_frame, time_since_current):
-    if time_frame == "Daily":
-        return get_room_daily_energy(time_since_current)
-    elif time_frame == "Weekly":
-        return get_room_weekly_energy(time_since_current)
-    elif time_frame == "Monthly":
-        return get_room_monthly_energy(time_since_current)
-    elif time_frame == "Yearly":
-        return get_room_yearly_energy(time_since_current)
-    else:
-        return {'error': 'Invalid timeframe specified'}
+@energy_views.route('/appliance/daily/<time_since_current>', methods=['GET'])
+def get_appliance_daily_energy_route(time_since_current):
+    return get_appliance_daily_energy(time_since_current)
 
-@app.route('/energy/total/<string:timeframe>/<int:timeSinceCurrent>', methods=['GET'])  
-def total_energy_route(time_frame, time_since_current):
-    if time_frame == "Daily":
-        return get_total_daily_energy(time_since_current)
-    elif time_frame == "Weekly":
-        return get_total_weekly_energy(time_since_current)
-    elif time_frame == "Monthly":
-        return get_total_monthly_energy(time_since_current)
-    elif time_frame == "Yearly":
-        return get_total_yearly_energy(time_since_current)
-    else:
-        return {'error': 'Invalid timeframe specified'}
+@energy_views.route('/appliance/weekly/<time_since_current>', methods=['GET'])
+def get_appliance_weekly_energy_route(time_since_current):
+    return get_appliance_weekly_energy(time_since_current)
+
+@energy_views.route('/appliance/monthly/<time_since_current>', methods=['GET'])
+def get_appliance_monthly_energy_route(time_since_current):
+    return get_appliance_monthly_energy(time_since_current)
+
+@energy_views.route('/appliance/yearly/<time_since_current>', methods=['GET'])
+def get_appliance_yearly_energy_route(time_since_current):
+    return get_appliance_yearly_energy(time_since_current)
+
+@energy_views.route('/room/daily/<time_since_current>', methods=['GET'])
+def get_room_daily_energy_route(time_since_current):
+    return get_room_daily_energy(time_since_current)
+
+@energy_views.route('/room/weekly/<time_since_current>', methods=['GET'])
+def get_room_weekly_energy_route(time_since_current):
+    return get_room_weekly_energy(time_since_current)
+
+@energy_views.route('/room/monthly/<time_since_current>', methods=['GET'])
+def get_room_monthly_energy_route(time_since_current):
+    return get_room_monthly_energy(time_since_current)
+
+@energy_views.route('/room/yearly/<time_since_current>', methods=['GET'])
+def get_room_yearly_energy_route(time_since_current):
+    return get_room_yearly_energy(time_since_current)
+
+@energy_views.route('/total/daily/<time_since_current>', methods=['GET'])
+def get_total_daily_energy_route(time_since_current):
+    return get_total_daily_energy(time_since_current)
+
+@energy_views.route('/total/weekly/<time_since_current>', methods=['GET'])
+def get_total_weekly_energy_route(time_since_current):
+    return get_total_weekly_energy(time_since_current)
+
+@energy_views.route('/total/monthly/<time_since_current>', methods=['GET'])
+def get_total_monthly_energy_route(time_since_current):
+    return get_total_monthly_energy(time_since_current)
+
+@energy_views.route('/total/yearly/<time_since_current>', methods=['GET'])
+def get_total_yearly_energy_route(time_since_current):
+    return get_total_yearly_energy(time_since_current)

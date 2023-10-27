@@ -4,6 +4,8 @@ from app.models.user_model import User
 from app.models.appliance_model import ApplianceType, EType
 import json
 from mongoengine import connect
+import pytest
+
 
 # Define a default connection
 connect(db='flask_test_database', host='mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/flask_test_database')
