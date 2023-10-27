@@ -74,8 +74,11 @@ def main():
     load_dotenv(os.path.join('.secrets', '.env'))
     URL = os.getenv('DB_URL')
     CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
-
-    main_scheduler = Scheduler(URL, 'hemsproject', CRED)
+    if os.getenv('ENV') == 'PRODUCTION':
+        database_name = 'hemsproject'
+    else:
+        database_name = 'test'
+    main_scheduler = Scheduler(URL, database_name, CRED)
     main_scheduler.run()             
-    
+
 main()

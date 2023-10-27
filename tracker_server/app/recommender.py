@@ -77,8 +77,6 @@ class Recommender:
     # DONT TEST
     @staticmethod
     def cluster(appliance):
-        if appliance.shape[0] <= 1:
-            return False
         appliance = appliance.dropna()
         if appliance.shape[0] < Recommender.SAMPLE_MIN:
             return False

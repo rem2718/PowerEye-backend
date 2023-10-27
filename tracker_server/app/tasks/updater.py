@@ -143,10 +143,12 @@ class Updater(Task):
                 doc[app]['imputed'] = energy
                 if app_type[app] == EType.PHANTOM.value:
                     power = powers[app]
-                    cluster = PR.cluster(power) 
-                    if cluster:
-                        self._dump_model('cluster', app, cluster)
-                        self.logger.info(f'cluster_{app} is dumped successfully')
+                    if power.shape[0] >= 1:              
+                        cluster = PR.cluster(power) 
+                        if cluster:
+                            self._dump_model('cluster', app, cluster)
+                            self.logger.info(f'cluster_{app} is dumped successfully')
+                            
             if energys.shape[0]:
                 forcast, threshold = PR.energy_forecasting(app, energys[app])
                 if forcast:
