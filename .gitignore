@@ -4,5 +4,7 @@ __pycache__/
 .vscode
 web_server/venv
 .env
+.env.testing
+.flaskenv
 models_filesystem/
 logs/
