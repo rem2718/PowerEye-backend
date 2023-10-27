@@ -4,7 +4,7 @@ from app.models.appliance_model import Appliance,ApplianceType, EType
 from app.models.user_model import User
 from app.models.power_model import Power
 from app.controllers.room_controller import delete_appliance_from_room
-from app.utils.cloud_interface import get_smartplugs, switch
+# from app.utils.cloud_interface import get_smartplugs, switch
 
 # Helper function to map the type of the appliances with (shiftable, phantom, none)
 def map_appliance_type_to_e_type(appliance_type):

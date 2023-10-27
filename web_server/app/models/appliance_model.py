@@ -33,7 +33,15 @@ class ApplianceType(Enum):
     SEWING_MACHINE = 22
     SPORTS_MACHINE = 23
 
-
+class PlugType(Enum):
+    """
+    Enumeration representing types (brands) of smart plugs' clouds.
+    Attributes:
+        MEROSS (int): Meross Cloud (main).
+        TUYA (int): Tuya Cloud (additional).
+    """
+    MEROSS = 1
+    TUYA = 2
 
 class Appliance(db.EmbeddedDocument):
     _id = db.ObjectIdField(unique=True, default=None)

@@ -1,24 +1,19 @@
 #run.py:
-import asyncio
 from app import create_app
-from app.utils.cloud_interface import Cloud_interface
-#chatgpt
+from app.views.energy_views import app as dummy
+
 from flask import Flask
+from dotenv import load_dotenv
+import os
 
-#cloud interface (merros & tuya)
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-cloud = Cloud_interface(loop)
-
-# create a global variable to store the cloud object so controllers can use it
-global cloud_obj
-cloud_obj = cloud
-
-#chatgpt
+# Load environment variables from .env file
+load_dotenv()
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')
 
 if __name__ == '__main__':
     app = create_app()
+    app.register_blueprint(dummy)
     app.run()
 
 
