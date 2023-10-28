@@ -1,6 +1,6 @@
 #run.py:
 from app import create_app
-from app.views.energy_views import app as dummy
+from app.views.dummy_views import app as dummy
 
 from flask import Flask
 from dotenv import load_dotenv

@@ -6,6 +6,7 @@ import os
 # if not current_app.secret_key:
 #     current_app.secret_key = os.getenv('SECRET_KEY')
 
+#Meross:
 # def test_verify_credentials():
 #     user = {
 #         'id': '1',
@@ -31,7 +32,7 @@ import os
 def test_verify_credentials_tuya():
     user = {
         'id': 'ward.najjar@yahoo.com',
-        'dev1': '64d1650b93d44252699aa223', #or using cloud_id --> bf16e0689159efb9c5xibt
+        'dev1': 'bf16e0689159efb9c5xibt',
         'plug_type': PlugType.TUYA.value
     }
     # user = {
@@ -50,7 +51,7 @@ def test_verify_credentials_tuya():
 def test_smartplugs_tuya():
     user = {
         'id': 'ward.najjar@yahoo.com',
-        'dev1': '64d1650b93d44252699aa223',
+        'dev1': 'bf16e0689159efb9c5xibt',
         'plug_type': PlugType.TUYA
     }
     print(f"User: {user}")

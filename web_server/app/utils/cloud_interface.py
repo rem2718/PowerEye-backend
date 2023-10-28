@@ -29,16 +29,14 @@ class Cloud_interface():
         return self.loop.run_until_complete(async_func())
     
     def verify_credentials(self, type, user):
-        print('verify')
         match type:
-            case PlugType.MEROSS.value: return self._run_async(lambda: Meross.verify_credentials(user, self.session))
+            case PlugType.MEROSS.value: return self._run_async(lambda: Meross.verify_credentials(user, session))
             case PlugType.TUYA.value: return Tuya.verify_credentials(user, self.session)
         
     def  get_smartplugs(self, type, user):
-        print('get')
         match type:
             case PlugType.MEROSS.value: return self._run_async(lambda: Meross.get_smartplugs(user))
-            case PlugType.TUYA: return Tuya.get_smartplugs(user, self.session)
+            case PlugType.TUYA: return Tuya.get_smartplugs(user, session)
  
     def switch(self, type, user, app_id, status):    
         match type:
@@ -62,10 +60,10 @@ class Meross():
             return False
 
     @staticmethod
-    async def  get_smartplugs(user):
+    async def get_smartplugs(user):
         try:
             id = user['id']
-            client = await MerossHttpClient.async_from_cloud_creds(MerossCloudCreds(session[id]['token'], session[id]['issued_on']))
+            client = await MerossHttpClient.async_from_cloud_creds(MerossCloudCreds(session[id]['token'], session[id]['key'], session[id]['issued_on']))
             manager = MerossManager(http_client=client)
             await manager.async_init()
             await manager.async_device_discovery()
@@ -80,7 +78,7 @@ class Meross():
     async def switch(user, app_id, status):
         try:
             id = user['id']
-            client = await MerossHttpClient.async_from_cloud_creds(MerossCloudCreds(session[id]['token'], session[id]['issued_on']))
+            client = await MerossHttpClient.async_from_cloud_creds(MerossCloudCreds(session[id]['token'], session[id]['key'], session[id]['issued_on']))
             manager = MerossManager(http_client=client)
             await manager.async_init()
             await manager.async_device_discovery()
@@ -104,11 +102,10 @@ class Tuya():
             # Create a new session for the user if it doesn't exist
             if id not in session:
                 session[id] = {}  
-                
             cloud = tinytuya.Cloud(apiRegion="eu", apiKey=API_KEY,
                     apiSecret=API_SECRET, apiDeviceID=user['dev1'])
             session[id]['token'] = cloud._gettoken()
-            return user #True
+            return True
         except Exception as e:
             print('Login failed:', str(e))
             return False
@@ -118,9 +115,10 @@ class Tuya():
         try:
             id = user['id']
             cloud = tinytuya.Cloud(apiRegion="eu", apiKey=API_KEY,
-                apiSecret=API_SECRET, apiDeviceID=user['dev1'], initial_token=session[id]['token']) 
+                apiSecret=API_SECRET, apiDeviceID=user['dev1']) 
             tuya_devices = cloud.getdevices()
             appliances = [{'id': dev['id'], 'name': dev['name']} for dev in tuya_devices]
+            print(tuya_devices)
             return appliances
         except Exception as e:
             print('Error retrieving Tuya smart plugs:', str(e))
