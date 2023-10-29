@@ -34,14 +34,8 @@ class ApplianceType(Enum):
     SPORTS_MACHINE = 23
 
     class PlugType(Enum):
-    """
-    Enumeration representing types (brands) of smart plugs' clouds.
-    Attributes:
-        MEROSS (int): Meross Cloud (main).
-        TUYA (int): Tuya Cloud (additional).
-    """
-    MEROSS = 1
-    TUYA = 2
+        MEROSS = 1
+        TUYA = 2
 
 class Appliance(db.EmbeddedDocument):
     _id = db.StringField(default=None)
