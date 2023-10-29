@@ -2,10 +2,11 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv('.env.testing')
 
 class TestConfig:
-    TESTING = True
+    DEBUG = False
+    TESTING = False
     MONGODB_URI = os.environ.get('TEST_DB_URL')
     MONGODB_SETTINGS = {
         'host': MONGODB_URI

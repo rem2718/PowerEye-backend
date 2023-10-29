@@ -1,6 +1,6 @@
 # PowerEye Backend
 
-Common HTTP status codes: 
+HTTP status codes: 
 200 OK
 The request was successful. This is the standard response for a successful HTTP request.
 

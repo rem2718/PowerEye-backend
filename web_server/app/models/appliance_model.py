@@ -33,7 +33,7 @@ class ApplianceType(Enum):
     SEWING_MACHINE = 22
     SPORTS_MACHINE = 23
 
-class PlugType(Enum):
+    class PlugType(Enum):
     """
     Enumeration representing types (brands) of smart plugs' clouds.
     Attributes:
@@ -44,10 +44,10 @@ class PlugType(Enum):
     TUYA = 2
 
 class Appliance(db.EmbeddedDocument):
-    _id = db.ObjectIdField(unique=True, default=None)
-    name = db.StringField(unique=True)
+    _id = db.StringField(default=None)
+    name = db.StringField()
     type = db.EnumField(ApplianceType)
-    cloud_id = db.StringField(unique=True)
+    cloud_id = db.StringField()
     energy = db.FloatField(default=0.0)
     is_deleted = db.BooleanField(default=False)
     connection_status = db.BooleanField(default= True)

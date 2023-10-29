@@ -1,32 +1,39 @@
-from app import app
-from flask import request
-from app.controllers.appliance_controller import add_appliance, switch_appliance, delete_appliance, get_power, get_smartPlugs, get_appliances
+from flask import Blueprint, request, jsonify
+from app.controllers.appliance_controller import *
 
+# Create a Blueprint to organize your routes
+appliance_views = Blueprint('appliance_views', __name__)
 
-@app.route('/smartplug', methods=['get'])
-def get_smartPlugs_route():
-    return get_smartPlugs()
-
-@app.route('/appliance', methods=['get'])
-def get_appliances_route():
-    return get_appliances()
-
-
-@app.route('/appliance', methods=['POST'])
+# Define routes using the imported functions
+@appliance_views.route('/add_appliance', methods=['POST'])
 def add_appliance_route():
-    name = request.json.get('name')
-    type = request.json.get('type')
-    return add_appliance(name, type)
+    data = request.get_json()
+    user_id = data['user_id']
+    name = data['name']
+    cloud_id = data['cloud_id']
+    type = data['type']
+    return add_appliance(user_id, name, cloud_id, type)
 
-@app.route('/appliance/<int:id>', methods=['PUT'])
-def switch_appliance_route(id):
-    status = request.json.get('status')
-    return switch_appliance(id, status)
+@appliance_views.route('/get_appliance/<user_id>/<appliance_id>', methods=['GET'])
+def get_appliance_by_id_route(user_id, appliance_id):
+    return get_appliance_by_id(user_id, appliance_id)
 
-@app.route('/appliance/<int:id>', methods=['DELETE'])
-def delete_appliance_route(id):
-    return delete_appliance(id)
+@appliance_views.route('/get_all_appliances/<user_id>', methods=['GET'])
+def get_all_appliances_route(user_id):
+    return get_all_appliances(user_id)
 
-@app.route('/power/<int:id>', methods=['GET'])
-def get_power_route(id):
-    return get_power(id)
+@appliance_views.route('/delete_appliance/<user_id>/<appliance_id>', methods=['DELETE'])
+def delete_appliance_route(user_id, appliance_id):
+    return delete_appliance(user_id, appliance_id)
+
+@appliance_views.route('/update_appliance_name/<user_id>/<appliance_id>', methods=['PUT'])
+def update_appliance_name_route(user_id, appliance_id):
+    data = request.get_json()
+    new_name = data['new_name']
+    return update_appliance_name(user_id, appliance_id, new_name)
+
+@appliance_views.route('/switch_appliance/<user_id>/<appliance_id>', methods=['PUT'])
+def switch_appliance_route(user_id, appliance_id):
+    data = request.get_json()
+    status = data['status']
+    return switch_appliance(user_id, appliance_id, status)
