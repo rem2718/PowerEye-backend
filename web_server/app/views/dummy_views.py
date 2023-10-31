@@ -1,5 +1,5 @@
 from flask import session
-from app.utils.dummy_controller import test_verify_credentials_tuya, test_smartplugs_tuya
+from app.utils.dummy_controller import *
 from flask import Blueprint
 from markupsafe import escape
 
@@ -13,13 +13,12 @@ def index():
 
 @app.route('/verify')
 def verify():
-    return test_verify_credentials_tuya()
+    return test_verify_credentials_meross()
 
 @app.route('/smartplugs')
 def smartplugs():
-    return test_smartplugs_tuya()
+    return test_smartplugs_meross()
 
-# @app.route('/logout')
-# def logout():
-#     session.pop('user', None)  # Remove the 'user' key from the session
-#     return jsonify({'message': 'Logged out successfully'})
+@app.route('/switch')
+def switch():
+    return test_switch_meross()

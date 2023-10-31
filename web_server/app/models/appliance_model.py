@@ -33,9 +33,9 @@ class ApplianceType(Enum):
     SEWING_MACHINE = 22
     SPORTS_MACHINE = 23
 
-    class PlugType(Enum):
-        MEROSS = 1
-        TUYA = 2
+class PlugType(Enum):
+    MEROSS = 1
+    TUYA = 2
 
 class Appliance(db.EmbeddedDocument):
     _id = db.StringField(default=None)
