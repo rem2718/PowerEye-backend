@@ -1,4 +1,4 @@
-
+import os
 from app.extensions import db
 from .appliance_model import Appliance  # Import the Appliance model
 import jwt
@@ -7,6 +7,10 @@ from mongoengine import EmbeddedDocumentField
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 from enum import Enum
+from dotenv import load_dotenv
+load_dotenv()
+from app.config import Config
+
 
 class CloudType(Enum):
     MERROS = 1
@@ -39,4 +43,4 @@ class User(db.Document):
             'user_id': str(self.id),
             'exp': datetime.utcnow() + timedelta(days=30)  # Token expiration time
         }
-        return jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+        return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')
