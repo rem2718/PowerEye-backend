@@ -7,6 +7,7 @@ from .views.room_views import room_views
 from .views.user_views import user_views
 from .views.power_views import power_views
 from .views.energy_views import energy_views
+from .views.dummy_views import dummy_views
 from .config import Config
 
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ def create_app():
     #     from .config_testing import TestConfig as Config
     # else:
     #     from .config import Config
-    
+    app.secret_key = os.getenv('SECRET_KEY')
     
     app.config.from_object(Config)
 
@@ -38,6 +39,7 @@ def create_app():
     app.register_blueprint(power_views)
     app.register_blueprint(user_views)
     app.register_blueprint(energy_views)
+    app.register_blueprint(dummy_views)
 
     return app
 
