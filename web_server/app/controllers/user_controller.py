@@ -1,11 +1,14 @@
 # app\controllers\user_controller.py
 from flask import jsonify ,request
-from app.models.user_model import User,CloudType
+from app.models.user_model import User,PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 from functools import wraps
 import jwt
+import asyncio
 from app.config import Config
+from app.utils.cloud_interface import cloud
+
 
 def login_required(f):
     @wraps(f)  # Preserve original function metadata
@@ -51,11 +54,12 @@ def validate_password(password):
 def validate_meross_credentials(email, password):
     try:
         # Implement validation using Meross interface
-        # Return True if valid, False otherwise
-        return True  # Placeholder, replace with actual validation logic
+        user = {'id': 'some_id', 'email': email, 'password': password}  # Create user object
+        return cloud.verify_credentials(PlugType.MEROSS, user)  # Call verify_credentials with PlugType.MEROSS
 
     except Exception as e:
         return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
+
 
 
 def signup(email, power_eye_password, meross_password):
