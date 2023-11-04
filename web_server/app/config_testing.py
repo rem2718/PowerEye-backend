@@ -11,5 +11,3 @@ class TestConfig:
     MONGODB_SETTINGS = {
         'host': MONGODB_URI
     }
-
-

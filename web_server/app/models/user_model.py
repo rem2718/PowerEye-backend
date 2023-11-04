@@ -1,4 +1,3 @@
-
 from app.extensions import db
 from .appliance_model import Appliance  # Import the Appliance model
 import jwt

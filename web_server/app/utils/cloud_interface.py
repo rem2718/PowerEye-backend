@@ -30,8 +30,8 @@ class Cloud_interface():
     
     def verify_credentials(self, type, user):
         match type:
-            case PlugType.MEROSS: return self._run_async(lambda: Meross.verify_credentials(user, self.session))
-            case PlugType.TUYA: return Tuya.verify_credentials(user, self.session)
+            case PlugType.MEROSS: return self._run_async(lambda: Meross.verify_credentials(user))
+            case PlugType.TUYA: return Tuya.verify_credentials(user)
         
     def  get_smartplugs(self, type, user):
         match type:
@@ -72,19 +72,21 @@ class Meross():
         return client, manager
     
     @staticmethod
-    async def verify_credentials(user, session):
+    async def verify_credentials(user):
         try:
-            id = user['id']
-            # Create a new session for the user if it doesn't exist
-            if id not in session:
-                session[id] = {} 
+            # id = user['id']
+            # # Create a new session for the user if it doesn't exist
+            # if id not in session:
+            #     session[id] = {} 
+            client, manager = await Meross._login(user)
             client = await MerossHttpClient.async_from_user_password(user['email'], user['password'])
-            session[id]['token'] = client.cloud_credentials.token
-            session[id]['key'] = client.cloud_credentials.key
-            session[id]['user_id'] = client.cloud_credentials.user_id
-            session[id]['issued_on'] = client.cloud_credentials.issued_on
+            # session[id]['token'] = client.cloud_credentials.token
+            # session[id]['key'] = client.cloud_credentials.key
+            # session[id]['user_id'] = client.cloud_credentials.user_id
+            # session[id]['issued_on'] = client.cloud_credentials.issued_on
             return True
         except Exception as e:
+            await Meross._logout(client, manager)
             print('Login failed:', str(e))
             return False
 
@@ -127,15 +129,15 @@ class Tuya():
     # tuya dont require any email or password, it just needs any device id
     # one trick we can do here it just replacing the passwords of ward and qater, with the first device id
     @staticmethod
-    def verify_credentials(user, session): 
+    def verify_credentials(user): 
         try:
-            id = user['id']
-            # Create a new session for the user if it doesn't exist
-            if id not in session:
-                session[id] = {}  
+            # id = user['id']
+            # # Create a new session for the user if it doesn't exist
+            # if id not in session:
+            #     session[id] = {}  
             cloud = tinytuya.Cloud(apiRegion="eu", apiKey=API_KEY,
                     apiSecret=API_SECRET, apiDeviceID=user['dev1'])
-            session[id]['token'] = cloud._gettoken()
+            # session[id]['token'] = cloud._gettoken()
             return True
         except Exception as e:
             print('Login failed:', str(e))

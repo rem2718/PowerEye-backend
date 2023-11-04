@@ -3,22 +3,22 @@ from app.utils.dummy_controller import *
 from flask import Blueprint
 from markupsafe import escape
 
-app = Blueprint("main", __name__)
+dummy_views = Blueprint("main", __name__)
 
-@app.route('/')
+@dummy_views.route('/')
 def index():
     if 'user' in session:
         return 'Logged in as %s' % escape(session['user'])
     return 'You are not logged in'
 
-@app.route('/verify')
+@dummy_views.route('/verify')
 def verify():
-    return test_verify_credentials_meross()
+    return test_verify_credentials_tuya()
 
-@app.route('/smartplugs')
+@dummy_views.route('/smartplugs')
 def smartplugs():
-    return test_smartplugs_meross()
+    return test_smartplugs_tuya()
 
-@app.route('/switch')
+@dummy_views.route('/switch')
 def switch():
-    return test_switch_meross()
+    return test_switch_tuya()
