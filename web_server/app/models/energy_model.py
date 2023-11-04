@@ -13,18 +13,18 @@ class Energy(db.DynamicDocument):
         'collection': 'Energies'  # the real collection name here
     }    
 
-    def save(self, *args, **kwargs):
-        # Prevent saving by raising an exception
-        raise ReadOnlyDocumentError("This document is read-only and cannot be modified.")
+    # def save(self, *args, **kwargs):
+    #     # Prevent saving by raising an exception
+    #     raise ReadOnlyDocumentError("This document is read-only and cannot be modified.")
         
-    def update(self, *args, **kwargs):
-        # Prevent updating by raising an exception
-        raise ReadOnlyDocumentError("This document is read-only and cannot be updated.")
+    # def update(self, *args, **kwargs):
+    #     # Prevent updating by raising an exception
+    #     raise ReadOnlyDocumentError("This document is read-only and cannot be updated.")
     
-    def modify(self, *args, **kwargs):
-        # Prevent modification by raising an exception
-        raise ReadOnlyDocumentError("This document is read-only and cannot be modified.")
+    # def modify(self, *args, **kwargs):
+    #     # Prevent modification by raising an exception
+    #     raise ReadOnlyDocumentError("This document is read-only and cannot be modified.")
     
-    def delete(self, *args, **kwargs):
-        # Prevent deletion by raising an exception
-        raise ReadOnlyDocumentError("This document is read-only and cannot be deleted.")
+    # def delete(self, *args, **kwargs):
+    #     # Prevent deletion by raising an exception
+    #     raise ReadOnlyDocumentError("This document is read-only and cannot be deleted.")

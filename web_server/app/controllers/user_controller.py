@@ -5,7 +5,6 @@ from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 from functools import wraps
 import jwt
-import asyncio
 from app.config import Config
 from app.utils.cloud_interface import cloud
 
@@ -41,9 +40,9 @@ def validate_password(password):
             or not any(char.isdigit() for char in password)
             or not any(char in '!@#$%^&*()-_+=<>,.?/:;{}[]~' for char in password)
         ):
-            return False, jsonify({'message': 'Password should contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one digit, and one special character'}), 400
+            return False, jsonify({'mess tage': 'Password should contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one digit, and one special character'}), 400
 
-        # Return True if the password meets the complexity criteria
+        # Return True if the password meet the complexity criteria
         return True, None, None
 
     except Exception as e:
@@ -86,8 +85,7 @@ def signup(email, power_eye_password, cloud_password):
             email=email,
             password=hashed_password,
             cloud_password=cloud_password,
-            # appliances = []  # Ensure appliances is initialized as an empty list
-
+            appliances=[]
         )
         user.save()
 
