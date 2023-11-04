@@ -3,7 +3,7 @@ from app.utils.dummy_controller import *
 from flask import Blueprint
 from markupsafe import escape
 
-dummy_views = Blueprint("main", __name__)
+dummy_views = Blueprint("dummy_views", __name__)
 
 @dummy_views.route('/')
 def index():

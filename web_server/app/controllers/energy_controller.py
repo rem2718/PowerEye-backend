@@ -3,8 +3,10 @@ from flask import Flask, jsonify
 from app.models.energy_model import Energy 
 from app.models.room_model import Room
 from app.models.user_model import User
+from app.models.appliance_model import Appliance
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from app import db  # Import your mongoengine instance
 
 def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, end_date):
     try:
@@ -79,15 +81,62 @@ def get_appliance_energy(user_id, appliance_id, time_since_current, interval):
         return jsonify({'error': 'An error occurred while retrieving appliance energy'})
 
 
-def get_room_daily_energy(time_since_current):
-    return
-def get_room_weekly_energy(time_since_current):
-    return
-def get_room_monthly_energy(time_since_current):
-    return
-def get_room_yearly_energy(time_since_current):
-    return
+def get_room_energy(user_id, room, time_since_current, interval):
+    try:
+        # Calculate the start and end dates based on the interval
+        end_date = datetime.now().date()
+        print(end_date)
 
+        if interval == 'daily':
+            start_date = end_date - timedelta(days = time_since_current)
+            print(start_date)
+        elif interval == 'weekly':
+            start_date = end_date - timedelta(days = 7 * time_since_current)
+            print(start_date)
+        elif interval == 'monthly':
+            start_date = end_date - relativedelta(months = time_since_current)
+            print(start_date)
+        elif interval == 'yearly':
+            start_date = end_date - relativedelta(years = time_since_current)
+            print(start_date)
+        else:
+            return jsonify({'error': 'Invalid interval'})
+
+        # Retrieve the rooms from the database
+        rooms = Room.objects()
+
+        # Calculate the energy data for each room
+        for room in rooms:
+            room_energy = calculate_room_energy(user_id, room, start_date, end_date)
+            print(f"room = {room_energy}")
+        
+        return jsonify({
+            'room_id': str(room.id),
+            'time_frame': interval,
+            'room_energy_consumption': room_energy
+        })
+    
+    except Exception as e:
+        print(f"An error occurred while retrieving room energy: {str(e)}")
+        return jsonify({'error': 'An error occurred while retrieving room energy'})
+
+def calculate_room_energy(user_id, room, start_date, end_date):
+    try:
+        # Make sure room is a valid Room object
+        if not isinstance(room, Room):
+            return 0
+        
+        # Calculate the energy consumption for the room within the specified interval
+        total_energy = 0
+        for appliance_id in room.appliances:
+            appliance_energy = calculate_appliance_energy_consumption(user_id, appliance_id, start_date, end_date)
+            total_energy += appliance_energy
+
+        return total_energy
+
+    except Exception as e:
+        print(f"An error occurred while calculating room energy: {str(e)}")
+        return 0
 
 def get_total_daily_energy(time_since_current):
     return
