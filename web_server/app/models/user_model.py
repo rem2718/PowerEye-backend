@@ -40,7 +40,7 @@ class User(db.Document):
     
     def generate_token(self):
         payload = {
-            'user_id': str(self.id),
+            'sub': str(self.id),
             'exp': datetime.utcnow() + timedelta(days=30)  # Token expiration time
         }
         return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')
