@@ -3,20 +3,17 @@ from flask import Blueprint, request, jsonify
 from app.controllers.user_controller import *
 
 
-
-
-# Create a Blueprint to organize your routes
+# Create a Blueprint to organize routes
 user_views = Blueprint('user_views', __name__)
 
 # Define routes using the imported functions
-
 @user_views.route('/signup', methods=['POST'])
 def signup_route():
     data = request.get_json()
     email = data['email']
     power_eye_password = data['power_eye_password']
-    meross_password = data['meross_password']
-    return signup(email, power_eye_password, meross_password)
+    cloud_password = data['cloud_password']
+    return signup(email, power_eye_password, cloud_password)
 
 @user_views.route('/login', methods=['POST'])
 def login_route():
@@ -29,7 +26,7 @@ def login_route():
 def logout_route():
     return logout()
 
-@user_views.route('/user', methods=['GET'])
+@user_views.route('/user_info', methods=['GET'])
 @login_required
 def get_user_info_route():
     user_id = data['user_id']

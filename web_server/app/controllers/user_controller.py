@@ -55,14 +55,14 @@ def validate_meross_credentials(email, password):
     try:
         # Implement validation using Meross interface
         user = {'id': 'some_id', 'email': email, 'password': password}  # Create user object
-        return cloud.verify_credentials(PlugType.MEROSS, user)  # Call verify_credentials with PlugType.MEROSS
-
+        # return cloud.verify_credentials(PlugType.MEROSS, user)  # Call verify_credentials with PlugType.MEROSS
+        return True
     except Exception as e:
         return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
 
 
 
-def signup(email, power_eye_password, meross_password):
+def signup(email, power_eye_password, cloud_password):
     try:
         # Validate PowerEye system password
         is_valid_pass, error_response, status_code = validate_password(power_eye_password)
@@ -70,7 +70,7 @@ def signup(email, power_eye_password, meross_password):
             return error_response, status_code
 
         # Validate Meross credentials
-        if not validate_meross_credentials(email, meross_password):
+        if not validate_meross_credentials(email, cloud_password):
             return jsonify({'error': 'Invalid Meross credentials.'}), 400
 
         # Check if the email is already associated with a non-deleted user
@@ -85,7 +85,9 @@ def signup(email, power_eye_password, meross_password):
         user = User(
             email=email,
             password=hashed_password,
-            cloud_password=meross_password,
+            cloud_password=cloud_password,
+            # appliances = []  # Ensure appliances is initialized as an empty list
+
         )
         user.save()
 
@@ -210,11 +212,3 @@ def set_goal(energy):
 def delete_goal():
     # Delete goal logic
     return jsonify({'message': 'Goal deleted successfully'}), 200
-
-
-
-def get_rooms():
-    # Implementation details for retrieving a list of rooms
-    rooms = Room.objects()
-    room_list = [{'id': str(room.id), 'name': room.name, 'status': room.status} for room in rooms]
-    return {'rooms': room_list}
