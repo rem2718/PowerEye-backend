@@ -20,7 +20,7 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
         user = User.objects.get(id=user_id)
         print(f"Retrieved User: {user}")
         # Convert the user_id to the appropriate data type
-        user_id_str = str(user_id)
+        user_id_obj = ObjectId(user_id)
 
         if not user:
             return jsonify({'message': 'User not found'}), 404  # Return a response if user not found
@@ -41,7 +41,7 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
         #     date__lte=end_date
         # ).all()
         # Construct the query using the Q object
-        query = Q(user_id=user_id_str) & Q(date__gte=start_date) & Q(date__lte=end_date)
+        query = Q(user_id=user_id_obj) & Q(date__gte=start_date) & Q(date__lte=end_date)
         print(f"Query Conditions: {query}")
 
         # Retrieve the energy readings matching the query
