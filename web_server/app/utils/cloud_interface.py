@@ -43,8 +43,6 @@ class Cloud_interface():
         match type:
             case PlugType.MEROSS: return self._run_async(lambda: Meross.switch(user, app_id, status, self.session))
             case PlugType.TUYA: return Tuya.switch(user, app_id, status, self.session)   
- 
-
         
 class Meross():
 
