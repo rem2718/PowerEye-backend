@@ -19,7 +19,7 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
         # Get the user by ID
         user = User.objects.get(id=user_id)
         print(f"Retrieved User: {user}")
-        # Convert the user_id to the appropriate data type
+        # Convert the user_id to ObjectId
         user_id_obj = ObjectId(user_id)
 
         if not user:
@@ -34,19 +34,20 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
         print(f"end date: {end_date}")
         print(f"start date: {start_date}")
 
-        # # Get the energy readings within the specified date range for the user and appliance
-        # energy_readings = Energy.objects.filter(
-        #     user_id=user,
-        #     date__gte=start_date,
-        #     date__lte=end_date
-        # ).all()
-        # Construct the query using the Q object
-        query = Q(user_id=user_id_obj) & Q(date__gte=start_date) & Q(date__lte=end_date)
-        print(f"Query Conditions: {query}")
+        # Get the energy readings within the specified date range for the user and appliance
+        energy_readings = Energy.objects.filter(
+            user_id=user,
+            date__gte=start_date,
+            date__lte=end_date
+        ).order_by("date")
 
-        # Retrieve the energy readings matching the query
-        energy_readings = Energy.objects(query)
-        print(f"Raw Query: {energy_readings._query}")
+        # # Construct the query using the Q object
+        # query = Q(user_id=user_id_obj) & Q(date__gte=start_date) & Q(date__lte=end_date)
+        # print(f"Query Conditions: {query}")
+
+        # # Retrieve the energy readings matching the query
+        # energy_readings = Energy.objects(query)
+        # print(f"Raw Query: {energy_readings._query}")
 
         # Calculate the energy consumption for the specified appliance
         energy_consumption = 0
