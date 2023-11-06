@@ -5,12 +5,10 @@ from .user_model import User  # Import the User model
 
 class Energy(db.DynamicDocument):
     date = db.DateField(required=True)
-    user_id = db.ReferenceField('User')
-    energy_readings = db.DynamicField()  # DynamicFields pairs (applianceid: energy_reading)
-
-
+    user = db.ReferenceField('User')
+    # Appliance ID will be used as a field name directly
     meta = {
-        'collection': 'Energies'  # the real collection name here
+        'collection': 'Energys'
     }    
 
     # def save(self, *args, **kwargs):

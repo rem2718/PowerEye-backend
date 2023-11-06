@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 appliance_views = Blueprint('appliance_views', __name__)
 
 # Define routes using the imported functions
-@appliance_views.route('/add_appliance', methods=['POST'])
+@appliance_views.route('/appliance', methods=['POST'])
 @jwt_required()
 def add_appliance_route():
     user_id = get_jwt_identity()
@@ -17,11 +17,11 @@ def add_appliance_route():
     type = data['type']
     return add_appliance(user_id, name, cloud_id, type)
 
-@appliance_views.route('/get_appliance/<appliance_id>', methods=['GET'])
-@jwt_required()
-def get_appliance_by_id_route(appliance_id):
-    user_id = get_jwt_identity()
-    return get_appliance_by_id(user_id, appliance_id)
+# @appliance_views.route('/appliance/<appliance_id>', methods=['GET'])
+# @jwt_required()
+# def get_appliance_by_id_route(appliance_id):
+#     user_id = get_jwt_identity()
+#     return get_appliance_by_id(user_id, appliance_id)
 
 @appliance_views.route('/get_all_appliances', methods=['GET'])
 @jwt_required()

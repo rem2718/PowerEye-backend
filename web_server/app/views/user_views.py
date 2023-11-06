@@ -28,7 +28,7 @@ def login_route():
 def logout_route():
     return logout()
 
-@user_views.route('/user_info', methods=['GET'])
+@user_views.route('/user', methods=['GET'])
 @jwt_required()
 def get_user_info_route():
     user_id = get_jwt_identity()

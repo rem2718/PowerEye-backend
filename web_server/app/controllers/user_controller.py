@@ -111,7 +111,7 @@ def login(email, password):
             return jsonify({'error': 'Password is required.'}), 400
 
         # Find the user by email
-        user = User.objects(email=email).first()
+        user = User.objects(email=email, is_deleted=False).first()
         if not user:
             return jsonify({'error': 'Invalid email or password.'}), 401
 
@@ -133,11 +133,12 @@ def logout():
 
 def get_user_info(user_id):
     try:
-        # Find and validate the user by ID
-        user = User.objects.get(id=user_id)
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+
         if not user:
             return jsonify({'message': 'User not found.'}), 404
-
+        
         user_info = {
             'email': user.email,
             'username': user.username,
@@ -153,8 +154,9 @@ def get_user_info(user_id):
 
 def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None, profile_picture=None):
     try:
-        # Find and validate the user by ID
-        user = User.objects.get(id=user_id)
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+
         if not user:
             return jsonify({'message': 'User not found.'}), 404
 
@@ -187,8 +189,9 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
 
 def delete_user(user_id):
     try:
-        # Find and validate the user by ID
-        user = User.objects.get(id=user_id)
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+
         if not user:
             return jsonify({'message': 'User not found.'}), 404
 
@@ -204,8 +207,9 @@ def delete_user(user_id):
 
 
 def get_goal(user_id):
-    # Find and validate the user by ID
-    user = User.objects.get(id=user_id)
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
     if not user:
         return jsonify({'message': 'User not found.'}), 404
     
@@ -214,8 +218,9 @@ def get_goal(user_id):
 
 
 def set_goal(user_id, energy):
-    # Find and validate the user by ID
-    user = User.objects.get(id=user_id)
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
     if not user:
         return jsonify({'message': 'User not found.'}), 404
 
@@ -239,10 +244,11 @@ def set_goal(user_id, energy):
         return jsonify({'message': 'Energy goal must be a numeric value.'}), 400
 
 def delete_goal(user_id):
-    # Find and validate the user by ID
-    user = User.objects.get(id=user_id)
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
     if not user:
         return jsonify({'message': 'User not found.'}), 404
+    
     user.energy_goal = None
     user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200

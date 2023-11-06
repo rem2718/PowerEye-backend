@@ -30,11 +30,14 @@ def switch_room_route(room_id):
     new_status = data['new_status']
     return switch_room(user_id, room_id, new_status)
 
-@room_views.route('/add_appliance_to_room/<room_id>/<appliance_id>', methods=['POST'])
+@room_views.route('/add_appliance_to_room/<room_id>', methods=['PUT'])
 @jwt_required()
-def add_appliance_to_room_route( room_id, appliance_id):
-    user_id = get_jwt_identity()    
-    return add_appliance_to_room(user_id, room_id, appliance_id)
+def add_appliances_to_room_route(room_id):
+    user_id = get_jwt_identity()
+    appliance_ids = request.json.get('appliance_ids', [])
+
+    return add_appliances_to_room(user_id, room_id, appliance_ids)
+
 
 @room_views.route('/get_all_user_rooms', methods=['GET'])
 @jwt_required()

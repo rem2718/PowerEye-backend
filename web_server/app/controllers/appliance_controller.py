@@ -90,11 +90,10 @@ def validate_cloud_id(user, cloud_id):
 
 def add_appliance(user_id, name, cloud_id, type):
     try:
-        # Retrieve the user by ID
-        user = User.objects.get(id=user_id)
-        
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
         
         # Validate name
         is_valid_name, error_response, status_code = validate_name(user,name)
@@ -138,11 +137,10 @@ def add_appliance(user_id, name, cloud_id, type):
 
 def get_appliance_by_id(user_id, appliance_id):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
@@ -171,11 +169,10 @@ def get_appliance_by_id(user_id, appliance_id):
 
 def get_all_appliances(user_id):
     try:
-        # Retrieve the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Retrieve the user's appliances
         appliances_data = []
@@ -186,13 +183,9 @@ def get_all_appliances(user_id):
                     'id': str(appliance._id),
                     'name': appliance.name,
                     'type': appliance.type.value,
-                    'cloud_id': appliance.cloud_id,
-                    'energy': appliance.energy,
-                    'is_deleted': appliance.is_deleted,
+                    # 'cloud_id': appliance.cloud_id,
                     'connection_status': appliance.connection_status,
                     'status': appliance.status,
-                    'baseline_threshold': appliance.baseline_threshold,
-                    'e_type': appliance.e_type.value
                 }
                 appliances_data.append(appliance_data)
 
@@ -208,11 +201,10 @@ def delete_appliance(user_id, appliance_id):
     from app.controllers.room_controller import delete_appliance_from_room
 
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
@@ -241,11 +233,10 @@ def delete_appliance(user_id, appliance_id):
 
 def update_appliance_name(user_id, appliance_id, new_name):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
@@ -269,11 +260,10 @@ def update_appliance_name(user_id, appliance_id, new_name):
 
 def switch_appliance(user_id, appliance_id, status):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
