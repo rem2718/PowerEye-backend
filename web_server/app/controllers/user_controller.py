@@ -7,6 +7,7 @@ from functools import wraps
 import jwt
 from app.config import Config
 from app.utils.cloud_interface import cloud
+import traceback
 
 
 def login_required(f):
@@ -57,10 +58,10 @@ def validate_password(password):
 def validate_meross_credentials(email, password):
     try:
         # Implement validation using Meross interface
-        user = {'id': 'some_id', 'email': email, 'password': password}  # Create user object
-        # return cloud.verify_credentials(PlugType.MEROSS, user)  # Call verify_credentials with PlugType.MEROSS
-        return True
+        user = {'email': email, 'password': password}  # Create user object
+        return cloud.verify_credentials(PlugType.MEROSS.value, user)  # Call verify_credentials with PlugType.MEROSS
     except Exception as e:
+        traceback.print_exc()
         return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
 
 
@@ -91,11 +92,12 @@ def signup(email, power_eye_password, cloud_password):
             cloud_password=cloud_password,
             appliances=[]
         )
-        user.save()
-
-        return jsonify({'message': 'User created successfully.'}), 201
+        # user.save()
+        print("user is saved")
+        return jsonify({'message': 'User created successfully.'},{user}), 201
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
