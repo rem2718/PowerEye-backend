@@ -1,3 +1,4 @@
+import os
 from app.extensions import db
 from .appliance_model import Appliance  # Import the Appliance model
 import jwt
@@ -5,11 +6,12 @@ from datetime import datetime, timedelta
 from mongoengine import EmbeddedDocumentField
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
-from enum import Enum
+from app.utils.enums import PlugType
+from dotenv import load_dotenv
+load_dotenv()
+from app.config import Config
 
-class CloudType(Enum):
-    MERROS = 1
-    TUYA = 2
+
 
 
 class User(db.Document):
@@ -18,7 +20,7 @@ class User(db.Document):
     username = db.StringField()
     is_deleted = db.BooleanField(default=False)
     appliances = db.ListField(EmbeddedDocumentField(Appliance),required=False,default=None)
-    cloud_type= db.EnumField(CloudType, default=CloudType.MERROS)
+    cloud_type= db.EnumField(PlugType, default=PlugType.MERROS)
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
     energy_goal = db.FloatField(default=-1.0)
@@ -35,7 +37,7 @@ class User(db.Document):
     
     def generate_token(self):
         payload = {
-            'user_id': str(self.id),
+            'sub': str(self.id),
             'exp': datetime.utcnow() + timedelta(days=30)  # Token expiration time
         }
-        return jwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256').decode('utf-8')
+        return jwt.encode(payload, Config.SECRET_KEY, algorithm='HS256')

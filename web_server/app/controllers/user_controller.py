@@ -1,9 +1,37 @@
 # app\controllers\user_controller.py
-from flask import jsonify
-from app.models.user_model import User,CloudType
+from flask import jsonify ,request
+from app.models.user_model import User,PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
+from functools import wraps
+import jwt
+from app.config import Config
+from app.utils.cloud_interface import cloud
+import traceback
 
+
+def login_required(f):
+    @wraps(f)  # Preserve original function metadata
+    def decorated_function(*args, **kwargs): #applies the wraps decorator to preserve the name and docstring of the original function f.
+        token  = request.headers.get('Authorization')# Get the JWT token from request headers
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 401  # Return error if token is missing
+
+        try:
+            data = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])  # Decode the token
+        # except jwt.ExpiredSignatureError:
+        #     return jsonify({'message': 'Token has expired. Please log in again.'}), 401  # Handle expired token
+        # except jwt.DecodeError:
+        #     return jsonify({'message': 'Invalid token'}), 401  # Handle invalid token
+        except Exception as e:
+            # output e
+            print(e)
+            return jsonify({
+                'message': f'Token is invalid !! {e}'
+            }), 401
+        return f(*args, **kwargs)  # Call the original route function f if token is valid
+
+    return decorated_function  # Return the decorated function ,This function will be used to wrap protected routes.
 
 
 # Function to validate PowerEye system password
@@ -19,7 +47,7 @@ def validate_password(password):
         ):
             return False, jsonify({'message': 'Password should contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one digit, and one special character'}), 400
 
-        # Return True if the password meets the complexity criteria
+        # Return True if the password meet the complexity criteria
         return True, None, None
 
     except Exception as e:
@@ -30,14 +58,15 @@ def validate_password(password):
 def validate_meross_credentials(email, password):
     try:
         # Implement validation using Meross interface
-        # Return True if valid, False otherwise
-        return True  # Placeholder, replace with actual validation logic
-
+        user = {'email': email, 'password': password}  # Create user object
+        return cloud.verify_credentials(PlugType.MEROSS.value, user)  # Call verify_credentials with PlugType.MEROSS
     except Exception as e:
+        traceback.print_exc()
         return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
 
 
-def signup(email, power_eye_password, meross_password):
+
+def signup(email, power_eye_password, cloud_password):
     try:
         # Validate PowerEye system password
         is_valid_pass, error_response, status_code = validate_password(power_eye_password)
@@ -45,7 +74,7 @@ def signup(email, power_eye_password, meross_password):
             return error_response, status_code
 
         # Validate Meross credentials
-        if not validate_meross_credentials(email, meross_password):
+        if not validate_meross_credentials(email, cloud_password):
             return jsonify({'error': 'Invalid Meross credentials.'}), 400
 
         # Check if the email is already associated with a non-deleted user
@@ -60,13 +89,15 @@ def signup(email, power_eye_password, meross_password):
         user = User(
             email=email,
             password=hashed_password,
-            cloud_password=meross_password,
+            cloud_password=cloud_password,
+            appliances=[]
         )
-        user.save()
-
-        return jsonify({'message': 'User created successfully.'}), 201
+        # user.save()
+        print("user is saved")
+        return jsonify({'message': 'User created successfully.'},{user}), 201
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -82,8 +113,7 @@ def login(email, password):
             return jsonify({'error': 'Password is required.'}), 400
 
         # Find the user by email
-        user = User.objects(email=email).first()
-
+        user = User.objects(email=email, is_deleted=False).first()
         if not user:
             return jsonify({'error': 'Invalid email or password.'}), 401
 
@@ -92,7 +122,7 @@ def login(email, password):
             return jsonify({'error': 'Invalid email or password.'}), 401
 
         # If email and password are valid, generate and return a token
-        token = generate_token(user)
+        token = user.generate_token()
         
         return jsonify({'token': token}), 200
 
@@ -105,12 +135,12 @@ def logout():
 
 def get_user_info(user_id):
     try:
-        # Find the user by ID
-        user = User.objects(id=user_id).first()
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
         if not user:
-            return jsonify({'message': 'User not found'}), 404
-
+            return jsonify({'message': 'User not found.'}), 404
+        
         user_info = {
             'email': user.email,
             'username': user.username,
@@ -126,20 +156,24 @@ def get_user_info(user_id):
 
 def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None, profile_picture=None):
     try:
-        # Find the user by ID
-        user = User.objects(id=user_id).first()
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Update user information if provided
         if meross_password is not None:
             user.cloud_password = meross_password
 
         if power_eye_password is not None:
-            if not validate_power_eye_password(power_eye_password):
+            if not validate_password(power_eye_password):
                 return jsonify({'error': 'Invalid PowerEye system password.'}), 400
-            user.password = power_eye_password
+            hashed_password = bcrypt.generate_password_hash(power_eye_password).decode('utf-8')
+            print(user.password)
+            user.password = hashed_password
+            print(user.password)
+            
 
         if username is not None:
             user.username = username
@@ -157,11 +191,11 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
 
 def delete_user(user_id):
     try:
-        # Find the user by ID
-        user = User.objects(id=user_id).first()
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Soft delete the user
         user.is_deleted = True
@@ -174,23 +208,49 @@ def delete_user(user_id):
 
 
 
-def get_goal():
-    goal = Goal.query.first()
-    return jsonify({'energy_goal': goal.energy}), 200
+def get_goal(user_id):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
 
-def set_goal(energy):
-    goal = Goal(energy=energy)
-    goal.save()
-    return jsonify({'message': 'Goal set successfully'}), 201
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    goal = user.energy_goal
+    return jsonify({'energy_goal': goal}), 200
 
-def delete_goal():
-    # Delete goal logic
+
+def set_goal(user_id, energy):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+
+    # Validate the energy input
+    try:
+        energy = float(energy)
+        if energy < 0:
+            return jsonify({'message': 'Energy goal must be a positive value.'}), 400
+
+        # Check if the input is greater than or equal to the total energy cost incurred
+        if energy < user.current_month_energy:
+            return jsonify({'message': 'Energy goal must be greater than or equal to the total energy cost incurred this month.'}), 400
+
+        # Set the energy goal and save the user
+        user.energy_goal = energy
+        user.save()
+
+        return jsonify({'message': 'Goal set successfully'}), 201
+
+    except ValueError:
+        return jsonify({'message': 'Energy goal must be a numeric value.'}), 400
+
+def delete_goal(user_id):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    user.energy_goal = None
+    user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200
-
-
-
-def get_rooms():
-    # Implementation details for retrieving a list of rooms
-    rooms = Room.objects()
-    room_list = [{'id': str(room.id), 'name': room.name, 'status': room.status} for room in rooms]
-    return {'rooms': room_list}

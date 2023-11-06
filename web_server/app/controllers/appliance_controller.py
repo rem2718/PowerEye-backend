@@ -93,27 +93,26 @@ def validate_cloud_id(user, cloud_id):
 
 def add_appliance(user_id, name, cloud_id, type):
     try:
-        # Retrieve the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
-
+            return jsonify({'message': 'User not found.'}), 404
+        
         # Validate name
         is_valid_name, error_response, status_code = validate_name(user,name)
         if not is_valid_name:
             return error_response, status_code
-
+        
         # Validate cloud_id using the new function
         is_valid_cloud_id, error_response, status_code = validate_cloud_id(user, cloud_id)
         if not is_valid_cloud_id:
             return error_response, status_code
 
         # Validate type
-        if type.value not in [t.value for t in ApplianceType]:
+        if type not in [t.value for t in ApplianceType]:
             return jsonify({'message': 'Invalid appliance type'}), 400
 
-        e_type = map_appliance_type_to_e_type(type).value
+        e_type = map_appliance_type_to_e_type(type)
 
         
         # Generate a unique ID for the appliance
@@ -131,8 +130,8 @@ def add_appliance(user_id, name, cloud_id, type):
         user.appliances.append(appliance)
         user.save()
 
-        return jsonify({'message': 'Appliance added successfully'}), 201
-
+        return jsonify({'message': f'Appliance {name} added successfully', 'appliance_id': appliance_id}), 201
+    
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
 
@@ -141,30 +140,29 @@ def add_appliance(user_id, name, cloud_id, type):
 
 def get_appliance_by_id(user_id, appliance_id):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
 
         # Convert appliance data to a dictionary
         appliance_data = {
             'id': str(appliance._id),
             'name': appliance.name,
-            'type': appliance.type.name,  # Assuming ApplianceType is an Enum
+            'type': appliance.type.value,
             'cloud_id': appliance.cloud_id,
             'energy': appliance.energy,
             'is_deleted': appliance.is_deleted,
             'connection_status': appliance.connection_status,
             'status': appliance.status,
             'baseline_threshold': appliance.baseline_threshold,
-            'e_type': appliance.e_type.name  # Assuming EType is an Enum
+            'e_type': appliance.e_type.value 
         }
 
         return jsonify(appliance_data), 200
@@ -174,11 +172,10 @@ def get_appliance_by_id(user_id, appliance_id):
 
 def get_all_appliances(user_id):
     try:
-        # Retrieve the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Retrieve the user's appliances
         appliances_data = []
@@ -189,13 +186,9 @@ def get_all_appliances(user_id):
                     'id': str(appliance._id),
                     'name': appliance.name,
                     'type': appliance.type.value,
-                    'cloud_id': appliance.cloud_id,
-                    'energy': appliance.energy,
-                    'is_deleted': appliance.is_deleted,
+                    # 'cloud_id': appliance.cloud_id,
                     'connection_status': appliance.connection_status,
                     'status': appliance.status,
-                    'baseline_threshold': appliance.baseline_threshold,
-                    'e_type': appliance.e_type.value
                 }
                 appliances_data.append(appliance_data)
 
@@ -208,20 +201,20 @@ def get_all_appliances(user_id):
         return jsonify({'message': f'Error occurred while retrieving appliances: {str(e)}'}), 500
 
 def delete_appliance(user_id, appliance_id):
-    from app.controllers.appliance_controller import delete_appliance_from_room
+    from app.controllers.room_controller import delete_appliance_from_room
 
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Soft delete the appliance by marking it as deleted
         appliance.is_deleted = True
@@ -231,7 +224,7 @@ def delete_appliance(user_id, appliance_id):
         # Check if the appliance is associated with any rooms
         rooms_with_appliance = Room.objects(appliances=appliance_id)
         if not rooms_with_appliance:
-            return jsonify({'message': 'Appliance deleted, but it is not associated with any rooms'}), 200
+            return jsonify({'message': 'Appliance deleted, it was not associated with any rooms'}), 200
 
         # Delete the appliance from each room where it's associated
         for room in rooms_with_appliance:
@@ -244,17 +237,17 @@ def delete_appliance(user_id, appliance_id):
 
 def update_appliance_name(user_id, appliance_id, new_name):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Validate name
         is_valid_name, error_response, status_code = validate_name(user,new_name)
@@ -272,17 +265,17 @@ def update_appliance_name(user_id, appliance_id, new_name):
 
 def switch_appliance(user_id, appliance_id, status):
     try:
-        # Get the user by ID
-        user = User.objects.get(id=user_id)
-
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id
@@ -303,6 +296,3 @@ def switch_appliance(user_id, appliance_id, status):
 
     except Exception as e:
         return jsonify({'message': f'Error occurred while switching appliance status: {str(e)}'}), 500
-
-
-
