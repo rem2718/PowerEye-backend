@@ -9,8 +9,10 @@ from app.utils.enums import Timeframe
 energy_views = Blueprint('energy_views', __name__)
 
 
-@energy_views.route('/appliance_energy/<user_id>/<appliance_id>/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
-def appliance_energy_route(user_id, appliance_id, timeframe, time_since_current):
+@energy_views.route('/appliance_energy/<appliance_id>/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
+@jwt_required()
+def appliance_energy_route(appliance_id, timeframe, time_since_current):
+    user_id = get_jwt_identity()
     try:
         timeframe_enum = Timeframe(timeframe)
     except ValueError:
@@ -18,8 +20,10 @@ def appliance_energy_route(user_id, appliance_id, timeframe, time_since_current)
 
     return get_energy(user_id, timeframe_enum, time_since_current, room_id=None, appliance_id=appliance_id)
 
-@energy_views.route('/room_energy/<user_id>/<room_id>/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
-def room_energy_route(user_id, room_id, timeframe, time_since_current):
+@energy_views.route('/room_energy/<room_id>/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
+@jwt_required()
+def room_energy_route(room_id, timeframe, time_since_current):
+    user_id = get_jwt_identity()
     try:
         timeframe_enum = Timeframe(timeframe)
     except ValueError:
@@ -27,8 +31,10 @@ def room_energy_route(user_id, room_id, timeframe, time_since_current):
 
     return get_energy(user_id, timeframe_enum, time_since_current, room_id=room_id, appliance_id=None)
 
-@energy_views.route('/total_energy/<user_id>/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
-def total_energy_route(user_id, timeframe, time_since_current):
+@energy_views.route('/total_energy/<int:timeframe>/<int:time_since_current>', methods=['GET']) 
+@jwt_required()
+def total_energy_route(timeframe, time_since_current):
+    user_id = get_jwt_identity()
     try:
         timeframe_enum = Timeframe(timeframe)
     except ValueError:

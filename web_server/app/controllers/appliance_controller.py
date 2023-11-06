@@ -127,8 +127,8 @@ def add_appliance(user_id, name, cloud_id, type):
         user.appliances.append(appliance)
         user.save()
 
-        return jsonify({'message': 'Appliance added successfully'}), 201
-
+        return jsonify({'message': f'Appliance {name} added successfully', 'appliance_id': appliance_id}), 201
+    
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
 

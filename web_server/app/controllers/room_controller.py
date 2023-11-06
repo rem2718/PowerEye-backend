@@ -54,8 +54,8 @@ def create_room(user_id, name, appliance_ids):
         room = Room(name=name, appliances=appliance_ids, user_id=user_id)
         room.save()
 
-        return jsonify({'message': f'Room {name} created successfully.'}), 201
-
+        return jsonify({'message': f'Room {name} created successfully.','room_id': room._id}), 201
+        
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
     

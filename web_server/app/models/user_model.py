@@ -6,15 +6,12 @@ from datetime import datetime, timedelta
 from mongoengine import EmbeddedDocumentField
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
-from enum import Enum
+from app.utils.enums import PlugType
 from dotenv import load_dotenv
 load_dotenv()
 from app.config import Config
 
 
-class PlugType(Enum):
-    MERROS = 1
-    TUYA = 2
 
 
 class User(db.Document):
