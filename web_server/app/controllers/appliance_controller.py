@@ -145,7 +145,7 @@ def get_appliance_by_id(user_id, appliance_id):
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
 
         # Convert appliance data to a dictionary
@@ -209,8 +209,9 @@ def delete_appliance(user_id, appliance_id):
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Soft delete the appliance by marking it as deleted
         appliance.is_deleted = True
@@ -241,8 +242,9 @@ def update_appliance_name(user_id, appliance_id, new_name):
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Validate name
         is_valid_name, error_response, status_code = validate_name(user,new_name)
@@ -268,8 +270,9 @@ def switch_appliance(user_id, appliance_id, status):
         # Find the appliance within the user's appliances
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
 
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
+
 
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id

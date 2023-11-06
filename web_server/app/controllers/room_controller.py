@@ -44,9 +44,10 @@ def create_room(user_id, name, appliance_ids):
             return error_response, status_code
 
         for aid in appliance_ids:
-            appliance = next((app for app in user.appliances if str(app._id) == aid), None)
+            appliance = next((app for app in user.appliances if str(app._id) == aid and not app.is_deleted), None)
             if not appliance:
-                return jsonify({'error': f'Appliance with ID {aid} not found.'}), 404
+                return jsonify({'error': f'Appliance with ID {aid} not found or is deleted.'}), 404
+
 
 
         # Create the room
@@ -82,7 +83,7 @@ def get_room_appliances(user_id, room_id):
         # Retrieve appliances for the specified room
         room_appliances = []
         for appliance_id in room.appliances:
-            appliance = next((app for app in user.appliances if app['_id'] == appliance_id), None)
+            appliance = next((app for app in user.appliances if str(app._id) == appliance_id and not app.is_deleted), None)
             if appliance:
                 room_appliances.append({
                     'name': appliance['name'],
@@ -128,12 +129,16 @@ def switch_room(user_id, room_id, new_status):
 
         # Retrieve appliances for the specified room
         for appliance_id in room.appliances:
-            update_result = switch_appliance(user_id, str(appliance_id), new_status)
+            appliance = next((app for app in user.appliances if str(app._id) == appliance_id and not app.is_deleted), None)
+            if appliance:
+                update_result = switch_appliance(user_id, str(appliance_id), new_status)
 
-            if update_result:
-                appliance_update_status.append('updated')
+                if update_result:
+                    appliance_update_status.append('updated')
+                else:
+                    appliance_update_status.append('not updated')
             else:
-                appliance_update_status.append('not updated')
+                appliance_update_status.append('not updated (deleted)')
 
         # Check if all appliances were successfully updated
         if all(status == 'updated' for status in appliance_update_status):
@@ -149,7 +154,6 @@ def switch_room(user_id, room_id, new_status):
 
 def add_appliances_to_room(user_id, room_id, appliance_ids):
     try:
-
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)
 
@@ -209,7 +213,15 @@ def get_all_user_rooms(user_id):
                 'appliances': []  # Initialize an empty list for appliance IDs
             }
 
+
             for appliance_id in room.appliances:
+                appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
+                if not appliance:
+                    return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
+
+                if appliance['is_deleted']:
+                    return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
+
                 room_data['appliances'].append(str(appliance_id))
 
             room_list.append(room_data)
@@ -237,6 +249,9 @@ def delete_appliance_from_room(user_id, room_id, appliance_id):
         if not appliance:
             return jsonify({'error': 'Appliance not found for the user'}), 404 
         
+        if appliance['is_deleted']:
+            return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
+
         if appliance._id in room.appliances:
             room.appliances.remove(appliance._id)
             room.save()

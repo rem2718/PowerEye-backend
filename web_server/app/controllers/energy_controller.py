@@ -82,7 +82,7 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
             return make_response(jsonify({'message': 'User not found.'}), 404)
 
         appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
-        if not appliance:
+        if not appliance or appliance.is_deleted:
             return make_response(jsonify({'message': 'Appliance not found'}), 404)
 
         
@@ -129,6 +129,10 @@ def calculate_room_energy_consumption(user_id, room_id, start_date, end_date):
 
         appliance_ids_in_room = set(str(appliance_id) for appliance_id in room.appliances)
 
+        # Filter out deleted appliances
+        appliances_in_room = [app for app in user.appliances if str(app._id) in appliance_ids_in_room and not app.is_deleted]
+
+        
         # Query energy documents for the specified date range and sort by date in ascending order
         energy_documents = Energy.objects(user=user_id, date__gte=start_date, date__lte=end_date).order_by('date')
 
@@ -172,13 +176,16 @@ def calculate_user_energy_consumption(user_id, start_date, end_date):
         if not user:
             return make_response(jsonify({'message': 'User not found.'}), 404)
 
+        # Filter out deleted appliances
+        appliances = [app for app in user.appliances if not app.is_deleted]
+
+        
         # Query energy documents for the specified date range and sort by date in ascending order
         energy_documents = Energy.objects(user=user_id, date__gte=start_date, date__lte=end_date).order_by('date')
 
         if not energy_documents:
             return make_response(jsonify({'message': 'No energy documents found for this user in the specified date range.'}), 404)
 
-        appliances = user.appliances
 
         # Calculate energy consumption values
         Energy_values = []
