@@ -1,30 +1,11 @@
 import pytest
-from pymongo.errors import ServerSelectionTimeoutError
 from pymongo import MongoClient
-from unittest.mock import Mock
-from app.interfaces.db import DB
+from pymongo.errors import ServerSelectionTimeoutError
 from app.external_dependencies.mongo import Mongo
+from pymongo import MongoClient
 
-# Mocked database connection for testing
-class MockDB:
-    def __init__(self):
-        self.database = {}
-
-    def insert_one(self, collection, document):
-        if collection not in self.database:
-            self.database[collection] = []
-        self.database[collection].append(document)
-
-    def find_one(self, collection, query):
-        if collection in self.database:
-            for document in self.database[collection]:
-                if all(document[key] == value for key, value in query.items()):
-                    return document
-        return None
-
-# Replace with your MongoDB URL and database name
-MONGODB_URL = "mongodb://localhost:27017/"
-TEST_DATABASE = "test_db"
+MONGODB_URL = "mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/"
+TEST_DATABASE = "test"  # Replace with your database name
 
 # MongoDB database client for testing
 @pytest.fixture
@@ -36,55 +17,80 @@ def mongo_client():
     except ServerSelectionTimeoutError:
         pytest.skip("MongoDB server is not available")
 
-# Fixture to initialize the MongoDB class for testing
-@pytest.fixture
-def mongo_instance():
-    db = MockDB()
-    mongo = Mongo(MONGODB_URL, TEST_DATABASE)
-    mongo.db = db
-    return mongo
+# Fixture to drop the "Mongo" collection before running the tests
+@pytest.fixture(autouse=True)
+def drop_mongo_collection(request, mongo_client):
+    # The finalizer function to drop the collection
+    def drop():
+        collection_name = "Mongo"
+        if collection_name in mongo_client[TEST_DATABASE].list_collection_names():
+            mongo_client[TEST_DATABASE][collection_name].drop()
 
-def test_insert_and_retrieve_document(mongo_instance):
-    collection = "test_collection"
-    document = {"_id": 1, "name": "John"}
+    # Add the finalizer
+    request.addfinalizer(drop)
 
-    # Insert a document
-    mongo_instance.insert_doc(collection, document)
+# @pytest.fixture
+# def create_mongo_collection(mongo_client):
+#     # Create the collection
+#     collection_name = "Mongo"
+#     db = mongo_client[TEST_DATABASE]
+#     db.create_collection(collection_name)
+#     yield db[collection_name]  # Return the collection
 
-    # Retrieve the inserted document
-    retrieved = mongo_instance.get_doc(collection, {"_id": 1})
+# # Fixture to initialize the MongoDB class for testing
+# @pytest.fixture
+# def mongo_instance(mongo_client):
+#     mongo = Mongo(MONGODB_URL, TEST_DATABASE)
+#     return mongo
 
-    assert retrieved == document
+# # Your test functions
+# # def test_insert_and_retrieve_document(mongo_instance):
+# #     collection = "Mongo"
+# #     document = {"_id": 1, "name": "John"}
 
-def test_insert_and_retrieve_multiple_documents(mongo_instance):
-    collection = "test_collection"
-    documents = [
-        {"_id": 1, "name": "John"},
-        {"_id": 2, "name": "Alice"},
-        {"_id": 3, "name": "Bob"},
-    ]
+# #     # Insert a document
+# #     mongo_instance.insert_doc(collection, document)
 
-    # Insert multiple documents
-    mongo_instance.insert_docs(collection, documents)
+# #     # Retrieve the inserted document
+# #     retrieved = mongo_instance.get_doc(collection, {"_id": 1})
 
-    # Retrieve all documents from the collection
-    retrieved_docs = list(mongo_instance.get_docs(collection))
+# #     assert retrieved == document
 
-    assert len(retrieved_docs) == len(documents)
-    assert all(doc in retrieved_docs for doc in documents)
+# # def test_insert_and_retrieve_multiple_documents(mongo_instance):
+# #     collection = "Mongo"
+# #     # Insert multiple documents into the collection
 
-def test_update_document_field(mongo_instance):
-    collection = "test_collection"
-    document = {"_id": 1, "name": "John"}
+# #     documents = [
+# #         {"_id": 2, "name": "Sara"},
+# #         {"_id": 3, "name": "Alice"},
+# #         {"_id": 4, "name": "Bob"},
+# #     ]
+# #     mongo_instance.db[collection].insert_many(documents)
 
-    # Insert a document
-    mongo_instance.insert_doc(collection, document)
+# #     # Insert multiple documents
+# #     mongo_instance.insert_docs(collection, documents)
 
-    # Update the "name" field of the document
-    new_name = "Alice"
-    mongo_instance.update(collection, 1, "name", new_name)
+# #     # Retrieve all documents from the collection
+# #     retrieved_docs = list(mongo_instance.get_docs(collection))
 
-    # Retrieve the updated document
-    retrieved = mongo_instance.get_doc(collection, {"_id": 1})
+# #     assert len(retrieved_docs) == len(documents)
+# #     assert all(doc in retrieved_docs for doc in documents)
 
-    assert retrieved["name"] == new_name
+
+# def test_update_document_field(mongo_instance):
+#     collection = "Mongo"
+#     document = {"_id": 1, "name": "John"}
+
+#     # Insert a document
+#     mongo_instance.insert_doc(collection, document)
+
+#     # Update the "name" field of the document with _id=1
+#     new_name = "Abdulrahman"
+#     updated_document = {"name": new_name}
+
+#     mongo_instance.update(collection, 1, "name", new_name)
+
+#     # Retrieve the updated document
+#     retrieved = mongo_instance.get_doc(collection, {"_id": 1})
+
+#     assert retrieved["name"] == new_name

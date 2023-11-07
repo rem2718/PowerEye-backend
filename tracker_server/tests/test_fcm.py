@@ -1,17 +1,16 @@
-<<<<<<< HEAD
 import os
 
 from dotenv import load_dotenv
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 import pytest
-
+    
 from app.external_dependencies.fcm import FCM
 from app.types_classes import NotifType
 
 load_dotenv(os.path.join('.secrets', '.env'))
 
 @pytest.fixture(scope="module")
-def my_fcm():
+def fcm_instance():
     CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
     mock_db = Mock()
     mock_db.get_doc.return_value = 'fhsfc6eZTqGbBA4roX_BTa:APA91bEATox4iW2TJ9XVkWoqG3j3JMkR0eJgLPxWZRkNnPinIxtBJL5pS5-Ho8Xr-BhE-0kI-tA_rIijSZCsZ83CrV2aC0QTNd-OJO981eKC5iQBZW8tPDk6BX7TX0uLm3xj5Y3f8KWM'
@@ -20,35 +19,15 @@ def my_fcm():
 @pytest.mark.parametrize(
     ('type', 'data', 'output'), (
           (NotifType.CREDS, None, ('Update Your Login', 'Please update your login information for Meross.')),
-          (NotifType.PEAK, {"app_name":'tv'}, ('Peak Usage Alert','Try to use tv after 5 PM. Click here to turn it off.'))  
+          (NotifType.PEAK, {"app_name":'tv'}, ('Peak Usage Alert','Try not to use tv after 5 PM. Click here to turn it off.'))  
     )
 )
-def test_map_message(my_fcm, type, data, output):
-    assert my_fcm.map_message(type, data) == output
+def test_map_message(fcm_instance, type, data, output):
+    assert fcm_instance.map_message(type, data) == output
     
-def test_notify(my_fcm):
-    assert 'powereye1-e599e' in my_fcm.notify('test user', NotifType.PEAK, {'app_name':'tv'})
+def test_notify(fcm_instance):
+    assert 'powereye1-e599e' in fcm_instance.notify('test user', NotifType.PEAK, {'app_name':'tv'})
     
-    
-from unittest.mock import Mock
-=======
-from unittest.mock import Mock
->>>>>>> 9b2bd7eba719ba18966a3008de8ef080da999da4
-from app.external_dependencies.fcm import FCM
-from app.types_classes import NotifType
-
-
-# Mock the database connection (you might need to use a testing library like unittest.mock)
-class MockDB:
-    def get_doc(self, collection, filter, projection):
-        # Implement your own mock for database retrieval
-        return {"registration_token": "mock_token"}
-
-def fcm_instance():
-    # Create and return an instance of FCM with a mock database
-    db = MockDB()
-    return FCM('path_to_firebase_credentials.json', db)
-
 def test_successful_notification(fcm_instance):
     user = 'test_user'
     notification_type = NotifType.CREDS
@@ -57,39 +36,33 @@ def test_successful_notification(fcm_instance):
     response = fcm_instance.notify(user, notification_type, data)
     # You can add assertions here to check if the response is as expected
 
-def test_invalid_user(fcm_instance):
-    # Test the scenario where an invalid user is provided
-    pass
+def test_map_message(fcm_instance):
+    # Test mapping a notification message based on NotifType.CREDS
+    title, body = fcm_instance.map_message(NotifType.CREDS)
+    assert title == 'Update Your Login'
+    assert body == 'Please update your login information for Meross.'
 
-def test_different_notification_types(fcm_instance):
-    # Test each notification type (CREDS, DISCONNECTION, GOAL, PEAK, PHANTOM, BASELINE)
-    pass
+    data = {'percentage': 80}
+    title, body = fcm_instance.map_message(NotifType.GOAL, data)
+    assert title == 'Monthly Usage Goal'
+    assert body == "You're close to reaching 80% of your monthly usage goal."
 
-def test_custom_data(fcm_instance):
-    # Test with custom data and ensure the title and body include the data
-    pass
+def test_notify(fcm_instance):
+    # Mock a user and their registration token
+    user = 'test_user_id'
+    mock_token = 'test_registration_token'
+    fcm_instance.db.get_doc.return_value = {'registration_token': mock_token}
 
-def test_database_retrieval(fcm_instance):
-    # Test if the database retrieval works correctly
-    pass
+    # Mock the messaging.send method
+    fcm_instance.logger.info = MagicMock()
+    fcm_instance.map_message = MagicMock(return_value=('Test Title', 'Test Body'))
+    fcm_instance.messaging.send = MagicMock(return_value='Test Response')
 
-def test_invalid_firebase_credentials(fcm_instance):
-    # Test how the class handles cases with missing or invalid Firebase credentials
-    pass
+    # Call the notify method and check if it works as expected
+    fcm_instance.notify(user, NotifType.PEAK, {'app_name': 'TestApp'})
+    fcm_instance.db.get_doc.assert_called_with('Users', {'_id': user}, {'registration_token': 1})
+    fcm_instance.map_message.assert_called_with(NotifType.PEAK, {'app_name': 'TestApp'})
+    fcm_instance.logger.info.assert_called_with('notify: NotifType.PEAK {\'app_name\': \'TestApp\'}')
+    fcm_instance.messaging.send.assert_called_once()
 
-def test_logging(fcm_instance):
-    # Test if the class logs the notifications correctly
-    pass
-
-def test_response_handling(fcm_instance):
-    # Test how the class handles different response statuses from Firebase
-    pass
-
-def test_edge_cases(fcm_instance):
-    # Test edge cases, such as very long data values, empty data, and special characters
-    pass
-
-def test_exception_handling(fcm_instance):
-    # Test how the class handles exceptions that might be raised during the notification process
-    pass
-
+    fcm_instance.logger.info.assert_any_call("Notification sent with response: 'Test Response'")

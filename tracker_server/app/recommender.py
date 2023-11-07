@@ -11,7 +11,8 @@ class Recommender:
     A class for providing personalized recommendation based on the user appliances power usage.
     """
 
-    SAMPLE_MIN = 1000
+    CLUSTER_THRESHOLD = 1000
+    SILHOUETTE_THRESHOLD = 0.5
 
     @staticmethod
     def check_goal(month_enegry: float, goal: float):
@@ -78,7 +79,7 @@ class Recommender:
     @staticmethod
     def cluster(appliance):
         appliance = appliance.dropna()
-        if appliance.shape[0] < Recommender.SAMPLE_MIN:
+        if appliance.shape[0] < Recommender.CLUSTER_THRESHOLD:
             return False
 
         value_counts = appliance.value_counts()
@@ -94,7 +95,7 @@ class Recommender:
         kmeans.fit(X, sample_weight=weights)
 
         score = silhouette_score(X, kmeans.labels_)
-        if score < 0.5:
+        if score < Recommender.SILHOUETTE_THRESHOLD:
             return False
 
         return kmeans
