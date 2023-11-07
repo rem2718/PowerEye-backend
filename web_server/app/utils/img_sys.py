@@ -1,7 +1,9 @@
+import os
+
 #list of extensions of imgs the user can upload
-ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif']
-#path to where the uploaded images should be saved
-UPLOADS_FOLDER = 'uploads/images/'
+ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'JPG', 'PNG', 'JPEG', 'GIF']
+#absolute path to where the uploaded images should be saved
+UPLOADS_FOLDER = os.path.abspath('app/uploads/images/')
 
 #function to check if the file extension is allowed
 def allowed_file(filename):
