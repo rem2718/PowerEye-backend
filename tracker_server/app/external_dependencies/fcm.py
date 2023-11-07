@@ -37,7 +37,7 @@ class FCM:
             tuple: A tuple containing the title and body of the notification message.
         """
         title = body = ''
-
+        
         # Map notification types to user-friendly titles and bodies
         match type:
             case NotifType.CREDS:
@@ -70,24 +70,25 @@ class FCM:
             data (dict, optional): Additional data for customizing the message.
         """
         # Get the user's registration token from the database
-        token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
+        try:
+            token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
 
-        # Map the notification type to a title and body
-        title, body = self.map_message(type, data)
+            title, body = self.map_message(type, data)
 
-        # Log the notification
-        self.logger.info(f'notify: {type} {data}')  # Combined 'type' and 'data' in a single f-string
-
-        # Create a message with the title and body
-        message = messaging.Message(
-        data={
-            "title": title,
-            "body": body,
-            },
-        token=token,
-        )
-        response = messaging.send(message)
-
-        # Log response status
-        self.logger.info(f"Notification sent with response: {response}")
+            # Log the notification
+            self.logger.info(f'notify: {type} {data}')  
+            if token:
+                message = messaging.Message(
+                data={
+                    "title": title,
+                    "body": body,
+                    },
+                token=token,
+                )
+                response = messaging.send(message)
+                self.logger.info(f'Notification sent with response: {response}')
+                return response
+        except:
+            self.logger.info('Notification failed to send')
+            return False
 

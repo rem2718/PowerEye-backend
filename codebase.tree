@@ -7,7 +7,7 @@
 ├── tracker_server
 │  ├── .secrets
 │  │  ├── .env
-│  │  └── powereye-392ff-firebase-adminsdk-tiloa-fb7741022f.json
+│  │  └── firebase-secret-key.json
 │  ├── app
 │  │  ├── external_dependencies
 │  │  │  ├── fcm.py
@@ -30,7 +30,6 @@
 │  │  └── 2023-10-08_23-09-30.log
 │  ├── models_filesystem
 │  │  ├── cluster_models
-│  │  │  └── 64d1605493d44252699aa216.pkl
 │  │  └── forecast_models
 │  ├── README.md
 │  └── scheduler.py
