@@ -1,7 +1,8 @@
-pow_env/
+venv/
 __pycache__/
 .secrets/
 .env
 .vscode/
 models_filesystem/
 logs/
+.pytest_cache
