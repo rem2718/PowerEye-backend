@@ -1,38 +1,16 @@
 # app\controllers\user_controller.py
-from flask import jsonify ,request
+from flask import jsonify ,request ,send_file
 from app.models.user_model import User
 from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
-from functools import wraps
-import jwt
 from app.config import Config
 from app.utils.cloud_interface import cloud
 import traceback
-
-
-def login_required(f):
-    @wraps(f)  # Preserve original function metadata
-    def decorated_function(*args, **kwargs): #applies the wraps decorator to preserve the name and docstring of the original function f.
-        token  = request.headers.get('Authorization')# Get the JWT token from request headers
-        if not token:
-            return jsonify({'message': 'Token is missing'}), 401  # Return error if token is missing
-
-        try:
-            data = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])  # Decode the token
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired. Please log in again.'}), 401  # Handle expired token
-        except jwt.DecodeError:
-            return jsonify({'message': 'Invalid token'}), 401  # Handle invalid token
-        except Exception as e:
-            # output e
-            print(e)
-            return jsonify({
-                'message': f'Token is invalid !! {e}'
-            }), 401
-        return f(*args, **kwargs)  # Call the original route function f if token is valid
-
-    return decorated_function  # Return the decorated function ,This function will be used to wrap protected routes.
+from app.utils.image_sys import *
+from werkzeug.utils import secure_filename
+import mimetypes
+import os
 
 
 # Function to validate PowerEye system password
