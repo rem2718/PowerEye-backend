@@ -1,10 +1,14 @@
 # app\controllers\appliance_controller.py
 from flask import jsonify
-from app.models.appliance_model import Appliance,ApplianceType, EType
+from app.models.appliance_model import Appliance,ApplianceType
+from app.utils.enums import EType
 from app.models.user_model import User
 from app.models.room_model import Room
 from mongoengine.errors import DoesNotExist
 from bson import ObjectId
+from app.utils.cloud_interface import cloud
+import traceback
+
 
 # from meross_interface import get_smartplugs, switch
 
@@ -57,6 +61,7 @@ def validate_name(user, name):
         return False, jsonify({'message': 'User not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return False, jsonify({'message': f'Error occurred while validating name: {str(e)}'}), 500
 
 # Helper function to validate plug id
@@ -86,6 +91,7 @@ def validate_cloud_id(user, cloud_id):
         return jsonify({'message': 'User not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while validating cloud ID: {str(e)}'}), 500
 
 def add_appliance(user_id, name, cloud_id, type):
@@ -133,6 +139,7 @@ def add_appliance(user_id, name, cloud_id, type):
         return jsonify({'message': 'User not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while adding appliance: {str(e)}'}), 500
 
 def get_appliance_by_id(user_id, appliance_id):
@@ -165,6 +172,7 @@ def get_appliance_by_id(user_id, appliance_id):
         return jsonify(appliance_data), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while retrieving appliance: {str(e)}'}), 500
 
 def get_all_appliances(user_id):
@@ -195,6 +203,7 @@ def get_all_appliances(user_id):
         return jsonify({'message': 'User not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while retrieving appliances: {str(e)}'}), 500
 
 def delete_appliance(user_id, appliance_id):
@@ -230,6 +239,7 @@ def delete_appliance(user_id, appliance_id):
         return jsonify({'message': 'Appliance deleted successfully'}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while deleting appliance: {str(e)}'}), 500
 
 def update_appliance_name(user_id, appliance_id, new_name):
@@ -258,6 +268,7 @@ def update_appliance_name(user_id, appliance_id, new_name):
         return jsonify({'message': f'Appliance name updated successfully to {new_name}.'}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while updating appliance: {str(e)}'}), 500
 
 def switch_appliance(user_id, appliance_id, status):
@@ -277,19 +288,45 @@ def switch_appliance(user_id, appliance_id, status):
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id
         
-        # Check if the status is a valid value (assuming it's a boolean)
+        status = bool(status)
+        # Check if the status is a valid value 
         if not isinstance(status, bool):
             return jsonify({'error': 'Invalid status value. It should be a boolean (True or False)'}), 400
         
         
         # Switch based on the cloud ID and status
-        # switch(cloud_id, status)
+        
+        cloud_user = {'id':user.id, 'email': user.email, 'password': user.cloud_password, 'dev1':cloud_id}  # Create user object
+        plug_type = user.cloud_type
 
-        # Update the status of the appliance
-        appliance.status = status
-        user.save()
-
+        
+        # Check the result before returning success message
+        switched, error_message,status_code=cloud.switch(plug_type, cloud_user, cloud_id, status)
+        if not switched:
+            return error_message, status_code
+        
         return jsonify({'message': 'Appliance status updated successfully'}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while switching appliance status: {str(e)}'}), 500
+    
+def get_smartplugs(user_id):
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
+        
+        cloud_user = {'id':user.id, 'email': user.email, 'password': user.cloud_password, 'dev1': 'bf16e0689159efb9c5xibt'}  # Create user object
+        plug_type = user.cloud_type
+        
+        smart_plugs, error_message,status_code=cloud.get_smartplugs(plug_type,cloud_user)
+        if not smart_plugs:
+            return error_message, status_code
+        
+        return jsonify({'Smart Plugs': smart_plugs}), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'message': f'Error occurred while retrieving smart plugs: {str(e)}'}), 500

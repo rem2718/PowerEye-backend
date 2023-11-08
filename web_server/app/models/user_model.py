@@ -10,17 +10,20 @@ from app.utils.enums import PlugType
 from dotenv import load_dotenv
 load_dotenv()
 from app.config import Config
+from bson import ObjectId
+
 
 
 
 
 class User(db.Document):
+    # _id = db.ObjectIdField(primary_key=True)
     email = db.EmailField(required=True)
     password = db.StringField(required=True)
-    username = db.StringField()
+    username = db.StringField(default="")
     is_deleted = db.BooleanField(default=False)
     appliances = db.ListField(EmbeddedDocumentField(Appliance),required=False,default=None)
-    cloud_type= db.EnumField(PlugType, default=PlugType.MERROS)
+    cloud_type= db.EnumField(PlugType, default=PlugType.MEROSS)
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
     energy_goal = db.FloatField(default=-1.0)

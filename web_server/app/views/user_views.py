@@ -42,8 +42,7 @@ def update_user_info_route():
     meross_password = data.get('meross_password')
     power_eye_password = data.get('power_eye_password')
     username = data.get('username')
-    profile_picture = data.get('profile_picture')
-    return update_user_info(user_id, meross_password, power_eye_password, username, profile_picture)
+    return update_user_info(user_id, meross_password, power_eye_password, username)
 
 @user_views.route('/user', methods=['DELETE'])
 @jwt_required()

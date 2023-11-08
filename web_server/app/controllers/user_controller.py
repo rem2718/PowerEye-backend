@@ -1,6 +1,7 @@
 # app\controllers\user_controller.py
 from flask import jsonify ,request
-from app.models.user_model import User,PlugType
+from app.models.user_model import User
+from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 from functools import wraps
@@ -19,10 +20,10 @@ def login_required(f):
 
         try:
             data = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])  # Decode the token
-        # except jwt.ExpiredSignatureError:
-        #     return jsonify({'message': 'Token has expired. Please log in again.'}), 401  # Handle expired token
-        # except jwt.DecodeError:
-        #     return jsonify({'message': 'Invalid token'}), 401  # Handle invalid token
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired. Please log in again.'}), 401  # Handle expired token
+        except jwt.DecodeError:
+            return jsonify({'message': 'Invalid token'}), 401  # Handle invalid token
         except Exception as e:
             # output e
             print(e)
@@ -53,17 +54,6 @@ def validate_password(password):
     except Exception as e:
         return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
     
-    
-# Function to validate Meross credentials (email and password)
-def validate_meross_credentials(email, password):
-    try:
-        # Implement validation using Meross interface
-        user = {'email': email, 'password': password}  # Create user object
-        return cloud.verify_credentials(PlugType.MEROSS.value, user)  # Call verify_credentials with PlugType.MEROSS
-    except Exception as e:
-        traceback.print_exc()
-        return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
-
 
 
 def signup(email, power_eye_password, cloud_password):
@@ -73,9 +63,14 @@ def signup(email, power_eye_password, cloud_password):
         if not is_valid_pass:
             return error_response, status_code
 
+
         # Validate Meross credentials
-        if not validate_meross_credentials(email, cloud_password):
-            return jsonify({'error': 'Invalid Meross credentials.'}), 400
+
+        cloud_user = {'email':email, 'password': cloud_password}  # Create user object
+        is_valid_meross, error_response,status_code=cloud.verify_credentials(PlugType.MEROSS,cloud_user)
+        if not is_valid_meross:
+            return error_response, status_code
+        
 
         # Check if the email is already associated with a non-deleted user
         existing_user = User.objects(email=email, is_deleted=False).first()
@@ -92,9 +87,10 @@ def signup(email, power_eye_password, cloud_password):
             cloud_password=cloud_password,
             appliances=[]
         )
-        # user.save()
+
+        user.save()
         print("user is saved")
-        return jsonify({'message': 'User created successfully.'},{user}), 201
+        return jsonify({'message': 'User created successfully.'}), 201
 
     except Exception as e:
         traceback.print_exc()
@@ -154,7 +150,7 @@ def get_user_info(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None, profile_picture=None):
+def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None):
     try:
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)
@@ -177,9 +173,6 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
 
         if username is not None:
             user.username = username
-
-        if profile_picture is not None:
-            user.profile_picture = profile_picture
 
         user.save()
 
