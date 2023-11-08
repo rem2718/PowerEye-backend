@@ -247,3 +247,60 @@ def delete_goal(user_id):
     user.energy_goal = None
     user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200
+
+
+def upload_profile_pic(user_id):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file extension'}), 400
+
+    # Generate a unique filename to avoid conflicts
+    filename = secure_filename(file.filename)
+    # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
+    # ensuring that the correct path is formed regardless of the operating system using (/ or \)
+    save_path = os.path.join(UPLOADS_FOLDER, filename)
+
+    # Save the uploaded profile picture file to the file system.
+    try:
+        file.save(save_path)
+        return jsonify({'message': 'Profile picture uploaded successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+def get_profile_pic(user_id):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({'error': 'No filename provided'}), 400
+
+    try:
+        file_path = os.path.join(UPLOADS_FOLDER, filename)
+        # Guess the mimetype(extension: png, jpg...) of the file based on the file path
+        mimetype, _ = mimetypes.guess_type(file_path)
+        if mimetype:
+            # If mimetype is available, return the file with the specified mimetype
+            return send_file(file_path, mimetype=mimetype)
+        else:
+            # If mimetype is not available, return the file without specifying a mimetype
+            return send_file(file_path)
+    except FileNotFoundError:
+        return jsonify({'error': 'Profile picture not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

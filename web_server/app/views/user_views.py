@@ -71,3 +71,14 @@ def delete_goal_route():
     return delete_goal(user_id)
 
 
+@user_views.route('/profile_pic', methods=["POST"])
+@jwt_required()
+def upload_profile_pic_route():
+    user_id = get_jwt_identity()
+    return upload_profile_pic(user_id)
+
+@user_views.route('/get_profile_pic', methods=["GET"])
+@jwt_required()
+def get_profile_pic_route():
+    user_id = get_jwt_identity()
+    return get_profile_pic(user_id)
