@@ -1,38 +1,17 @@
 # app\controllers\user_controller.py
-from flask import jsonify ,request
-from app.models.user_model import User,PlugType
+from flask import jsonify ,request ,send_file
+from app.models.user_model import User
+from app.models.notified_device_model import Notified_Device # Import the Notified_Device model
+from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
 from app.config import Config
 from app.utils.cloud_interface import cloud
 import traceback
-from app.utils.img_sys import *
+from app.utils.image_sys import *
 from werkzeug.utils import secure_filename
-import os
 import mimetypes
-
-def login_required(f):
-    @wraps(f)  # Preserve original function metadata
-    def decorated_function(*args, **kwargs): #applies the wraps decorator to preserve the name and docstring of the original function f.
-        token  = request.headers.get('Authorization')# Get the JWT token from request headers
-        if not token:
-            return jsonify({'message': 'Token is missing'}), 401  # Return error if token is missing
-
-        try:
-            data = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])  # Decode the token
-        # except jwt.ExpiredSignatureError:
-        #     return jsonify({'message': 'Token has expired. Please log in again.'}), 401  # Handle expired token
-        # except jwt.DecodeError:
-        #     return jsonify({'message': 'Invalid token'}), 401  # Handle invalid token
-        except Exception as e:
-            # output e
-            print(e)
-            return jsonify({
-                'message': f'Token is invalid !! {e}'
-            }), 401
-        return f(*args, **kwargs)  # Call the original route function f if token is valid
-
-    return decorated_function  # Return the decorated function ,This function will be used to wrap protected routes.
+import os
 
 
 # Function to validate PowerEye system password
@@ -247,3 +226,85 @@ def delete_goal(user_id):
     user.energy_goal = None
     user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200
+
+
+def upload_profile_pic(user_id,file):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    if not file:
+        return jsonify({'error': 'No file provided'}), 400
+
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file extension'}), 400
+
+    # Generate a unique filename to avoid conflicts
+    filename = secure_filename(file.filename)
+    # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
+    # ensuring that the correct path is formed regardless of the operating system using (/ or \)
+    save_path = os.path.join(UPLOADS_FOLDER, filename)
+
+    # Save the uploaded profile picture file to the file system.
+    try:
+        file.save(save_path)
+        return jsonify({'message': 'Profile picture uploaded successfully'}),200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+def get_profile_pic(user_id,filename):
+    # Retrieve the user by ID and make sure they are not deleted
+    user = User.objects.get(id=user_id, is_deleted=False)
+    if not user:
+        return jsonify({'message': 'User not found.'}), 404
+    
+    if not filename:
+        return jsonify({'error': 'No filename provided'}), 400
+
+    try:
+        file_path = os.path.join(UPLOADS_FOLDER, filename)
+        # Guess the mimetype(extension: png, jpg...) of the file based on the file path
+        mimetype, _ = mimetypes.guess_type(file_path)
+        if mimetype:
+            # If mimetype is available, return the file with the specified mimetype
+            return send_file(file_path, mimetype=mimetype) ,200
+        else:
+            # If mimetype is not available, return the file without specifying a mimetype
+            return send_file(file_path),200
+    except FileNotFoundError:
+        return jsonify({'error': 'Profile picture not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+
+def set_FCM_token(user_id, device_id, fcm_token):
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
+
+        # Check if the device_id already exists in the notified_devices list
+        notified_device = next((nd for nd in user.notified_devices if nd.device_id == device_id), None)
+
+        if notified_device:
+            # Update the fcm_token for the existing device_id
+            notified_device.fcm_token = fcm_token
+        else:
+            # Create a new Notified_Device and append it to the user's notified_devices list
+            new_device = Notified_Device(device_id=device_id, fcm_token=fcm_token)
+            user.notified_devices.append(new_device)
+
+        # Save the user document with the updated/added notified_devices
+        user.save()
+
+        return jsonify({'message': 'FCM token set successfully'}), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'message': f'Error occurred while setting FCM token: {str(e)}'}), 500
