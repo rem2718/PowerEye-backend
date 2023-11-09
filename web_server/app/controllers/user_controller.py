@@ -1,6 +1,7 @@
 # app\controllers\user_controller.py
 from flask import jsonify ,request ,send_file
 from app.models.user_model import User
+from app.models.notified_device_model import Notified_Device # Import the Notified_Device model
 from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
@@ -252,7 +253,7 @@ def upload_profile_pic(user_id,file):
     # Save the uploaded profile picture file to the file system.
     try:
         file.save(save_path)
-        return jsonify({'message': 'Profile picture uploaded successfully'})
+        return jsonify({'message': 'Profile picture uploaded successfully'}),200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
@@ -271,11 +272,40 @@ def get_profile_pic(user_id,filename):
         mimetype, _ = mimetypes.guess_type(file_path)
         if mimetype:
             # If mimetype is available, return the file with the specified mimetype
-            return send_file(file_path, mimetype=mimetype)
+            return send_file(file_path, mimetype=mimetype) ,200
         else:
             # If mimetype is not available, return the file without specifying a mimetype
-            return send_file(file_path)
+            return send_file(file_path),200
     except FileNotFoundError:
         return jsonify({'error': 'Profile picture not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+
+def set_FCM_token(user_id, device_id, fcm_token):
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
+
+        # Check if the device_id already exists in the notified_devices list
+        notified_device = next((nd for nd in user.notified_devices if nd.device_id == device_id), None)
+
+        if notified_device:
+            # Update the fcm_token for the existing device_id
+            notified_device.fcm_token = fcm_token
+        else:
+            # Create a new Notified_Device and append it to the user's notified_devices list
+            new_device = Notified_Device(device_id=device_id, fcm_token=fcm_token)
+            user.notified_devices.append(new_device)
+
+        # Save the user document with the updated/added notified_devices
+        user.save()
+
+        return jsonify({'message': 'FCM token set successfully'}), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'message': f'Error occurred while setting FCM token: {str(e)}'}), 500
+

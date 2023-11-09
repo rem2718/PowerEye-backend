@@ -83,3 +83,13 @@ def upload_profile_pic_route():
 def get_profile_pic_route(filename):
     user_id = get_jwt_identity()
     return get_profile_pic(user_id,filename)
+
+
+@user_views.route('/FCM_token', methods=["POST"])
+@jwt_required()
+def set_FCM_token_route():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    device_id = data['device_id']
+    fcm_token = data['fcm_token']
+    return set_FCM_token(user_id, device_id, fcm_token)
