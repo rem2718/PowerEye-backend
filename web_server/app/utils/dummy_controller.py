@@ -61,9 +61,3 @@ def test_smartplugs_tuya():
     print(f"Retreiving SmartPlugs result: {result}")
 
     return jsonify({'smartplugs': result})
-
-# def test_get_smartplugs():
-#     plug_type = PlugType.MEROSS.value
-    
-#     result = cloud.get_smartplugs(plug_type, user)
-#     return str(result)
