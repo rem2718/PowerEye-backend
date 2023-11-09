@@ -42,8 +42,7 @@ def update_user_info_route():
     meross_password = data.get('meross_password')
     power_eye_password = data.get('power_eye_password')
     username = data.get('username')
-    profile_picture = data.get('profile_picture')
-    return update_user_info(user_id, meross_password, power_eye_password, username, profile_picture)
+    return update_user_info(user_id, meross_password, power_eye_password, username)
 
 @user_views.route('/user', methods=['DELETE'])
 @jwt_required()
@@ -85,3 +84,25 @@ def get_profile_pic_route():
 
 
 
+@user_views.route('/profile_pic', methods=["POST"])
+@jwt_required()
+def upload_profile_pic_route():
+    user_id = get_jwt_identity()
+    file = request.files['file']
+    return upload_profile_pic(user_id,file)
+
+@user_views.route('/profile_pic/<filename>', methods=["GET"])
+@jwt_required()
+def get_profile_pic_route(filename):
+    user_id = get_jwt_identity()
+    return get_profile_pic(user_id,filename)
+
+
+@user_views.route('/FCM_token', methods=["POST"])
+@jwt_required()
+def set_FCM_token_route():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    device_id = data['device_id']
+    fcm_token = data['fcm_token']
+    return set_FCM_token(user_id, device_id, fcm_token)

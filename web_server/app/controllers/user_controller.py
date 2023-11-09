@@ -1,10 +1,8 @@
 # app\controllers\user_controller.py
-from flask import jsonify ,request, send_file
+from flask import jsonify ,request
 from app.models.user_model import User,PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
-from functools import wraps
-import jwt
 from app.config import Config
 from app.utils.cloud_interface import cloud
 import traceback
@@ -56,17 +54,6 @@ def validate_password(password):
     except Exception as e:
         return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
     
-    
-# Function to validate Meross credentials (email and password)
-def validate_meross_credentials(email, password):
-    try:
-        # Implement validation using Meross interface
-        user = {'email': email, 'password': password}  # Create user object
-        return cloud.verify_credentials(PlugType.MEROSS.value, user)  # Call verify_credentials with PlugType.MEROSS
-    except Exception as e:
-        traceback.print_exc()
-        return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
-
 
 
 def signup(email, power_eye_password, cloud_password):
@@ -76,9 +63,14 @@ def signup(email, power_eye_password, cloud_password):
         if not is_valid_pass:
             return error_response, status_code
 
+
         # Validate Meross credentials
-        if not validate_meross_credentials(email, cloud_password):
-            return jsonify({'error': 'Invalid Meross credentials.'}), 400
+
+        cloud_user = {'email':email, 'password': cloud_password}  # Create user object
+        is_valid_meross, error_response,status_code=cloud.verify_credentials(PlugType.MEROSS,cloud_user)
+        if not is_valid_meross:
+            return error_response, status_code
+        
 
         # Check if the email is already associated with a non-deleted user
         existing_user = User.objects(email=email, is_deleted=False).first()
@@ -95,9 +87,10 @@ def signup(email, power_eye_password, cloud_password):
             cloud_password=cloud_password,
             appliances=[]
         )
-        # user.save()
+
+        user.save()
         print("user is saved")
-        return jsonify({'message': 'User created successfully.'},{user}), 201
+        return jsonify({'message': 'User created successfully.'}), 201
 
     except Exception as e:
         traceback.print_exc()
@@ -157,7 +150,7 @@ def get_user_info(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None, profile_picture=None):
+def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None):
     try:
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)
@@ -180,9 +173,6 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
 
         if username is not None:
             user.username = username
-
-        if profile_picture is not None:
-            user.profile_picture = profile_picture
 
         user.save()
 
@@ -257,59 +247,3 @@ def delete_goal(user_id):
     user.energy_goal = None
     user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200
-
-def upload_profile_pic(user_id):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
-
-    if not user:
-        return jsonify({'message': 'User not found.'}), 404
-    
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file extension'}), 400
-
-    # Generate a unique filename to avoid conflicts
-    filename = secure_filename(file.filename)
-    # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
-    # ensuring that the correct path is formed regardless of the operating system using (/ or \)
-    save_path = os.path.join(UPLOADS_FOLDER, filename)
-
-    # Save the uploaded profile picture file to the file system.
-    try:
-        file.save(save_path)
-        return jsonify({'message': 'Profile picture uploaded successfully'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-def get_profile_pic(user_id):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
-
-    if not user:
-        return jsonify({'message': 'User not found.'}), 404
-    
-    filename = request.args.get('filename')
-    if not filename:
-        return jsonify({'error': 'No filename provided'}), 400
-
-    try:
-        file_path = os.path.join(UPLOADS_FOLDER, filename)
-        # Guess the mimetype(extension: png, jpg...) of the file based on the file path
-        mimetype, _ = mimetypes.guess_type(file_path)
-        if mimetype:
-            # If mimetype is available, return the file with the specified mimetype
-            return send_file(file_path, mimetype=mimetype)
-        else:
-            # If mimetype is not available, return the file without specifying a mimetype
-            return send_file(file_path)
-    except FileNotFoundError:
-        return jsonify({'error': 'Profile picture not found'}), 404
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500

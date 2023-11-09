@@ -1,6 +1,7 @@
 import os
 from app.extensions import db
 from .appliance_model import Appliance  # Import the Appliance model
+from .notified_device_model import Notified_Device # Import the Notified_Device model
 import jwt
 from datetime import datetime, timedelta
 from mongoengine import EmbeddedDocumentField
@@ -10,22 +11,25 @@ from app.utils.enums import PlugType
 from dotenv import load_dotenv
 load_dotenv()
 from app.config import Config
+from bson import ObjectId
+
 
 
 
 
 class User(db.Document):
+    # _id = db.ObjectIdField(primary_key=True)
     email = db.EmailField(required=True)
     password = db.StringField(required=True)
-    username = db.StringField()
+    username = db.StringField(default="")
     is_deleted = db.BooleanField(default=False)
-    appliances = db.ListField(EmbeddedDocumentField(Appliance),required=False,default=None)
-    cloud_type= db.EnumField(PlugType, default=PlugType.MERROS)
+    appliances = db.ListField(EmbeddedDocumentField(Appliance),required=False,default=[])
+    cloud_type= db.EnumField(PlugType, default=PlugType.MEROSS)
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
     energy_goal = db.FloatField(default=-1.0)
-    registration_token = db.StringField(default="")
-    #profile_pic
+    notified_devices = db.ListField(EmbeddedDocumentField(Notified_Device),required=False,default=[])
+    # profile_pic is saved in the server 
     
     meta = {
         'collection': 'Users'  # the real collection name here

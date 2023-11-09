@@ -38,5 +38,5 @@ class ApplianceType(Enum):
     
 
 class PlugType(Enum):
-    MERROS = 1
+    MEROSS = 1
     TUYA = 2

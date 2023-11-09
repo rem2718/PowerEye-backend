@@ -1,22 +1,21 @@
-from enum import Enum
 import asyncio
 import os
 from meross_iot.model.credentials import MerossCloudCreds
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 import tinytuya
-from app.models.user_model import PlugType
+from app.utils.enums import PlugType
 from flask import session
 from dotenv import load_dotenv
+import traceback
+from flask import jsonify
+
 
 
 load_dotenv(os.path.join('.secrets', '.env'))
 API_KEY = os.getenv('API_KEY')
 API_SECRET = os.getenv('API_SECRET')
 
-class PlugType(Enum):
-    MEROSS = 1
-    TUYA = 2
 
 class Cloud_interface():
     # user for meross: {'id':_ , 'email':, 'password':}
@@ -72,7 +71,8 @@ class Meross():
             manager = MerossManager(http_client=client)
             return client, manager
         except Exception as e:
-            print(str(e)) 
+            print(str(e))
+            traceback.print_exc() 
             return False
         
     @staticmethod
@@ -81,12 +81,12 @@ class Meross():
             client = None
             client = await MerossHttpClient.async_from_user_password(user['email'], user['password'])
             await Meross._logout(client)
-            return True
+            return True,None,None
         except Exception as e:
             if client != None:
                 await Meross._logout(client)
-            print('Login failed:', str(e))
-            return False
+            traceback.print_exc()
+            return False, jsonify({'message': f'Error occurred while validating Meross credentials: {str(e)}'}), 500
 
     @staticmethod
     async def get_smartplugs(user, session):
@@ -99,15 +99,16 @@ class Meross():
                 await manager.async_init()
                 await manager.async_device_discovery()
                 meross_devices = manager.find_devices(device_type="mss310")
-                appliances = [{'id': str(dev.uuid), 'name': dev.name} for dev in meross_devices]
+                smartplugs = [{'id': str(dev.uuid), 'name': dev.name} for dev in meross_devices]
                 await Meross._logout(client, manager) #for testing only
-                return appliances
+                return smartplugs,None,None
             else: 
-                return []
+                return [], None,None
         except Exception as e:
             await Meross._logout(client, manager)
             print('Error retrieving Meross smart plugs:', str(e)) 
-            return []
+            traceback.print_exc()
+            return [], jsonify({'message': f'Error occurred while retrieving smart plugs: {str(e)}'}), 500
 
     @staticmethod
     async def switch(user, app_id, status, session):
@@ -125,16 +126,17 @@ class Meross():
                 else:
                     await dev.async_turn_off(channel=0)
                     await Meross._logout(client, manager) #for testing only
-                return True 
+                return True,None,None 
             else:
-                return False
+                return False,None,None 
         except Exception as e:
             await Meross._logout(client, manager)
             print('Error Switching Meross smart plugs:', str(e))
-            return False
+            traceback.print_exc()
+            return False, {'message': f'Error Switching Tuya appliance: {str(e)}'}, 500
             
 class Tuya():
-    # tuya dont require any email or password, it just needs any device id
+    # tuya doesnt require any email or password, it just needs any device id
     
     @staticmethod
     def _login(user, session):
@@ -157,6 +159,7 @@ class Tuya():
             return True
         except Exception as e:
             print('Login failed:', str(e))
+            traceback.print_exc()
             return False
 
     @staticmethod
@@ -164,11 +167,13 @@ class Tuya():
         try:
             cloud = Tuya._login(user, session)
             tuya_devices = cloud.getdevices()
-            appliances = [{'id': dev['id'], 'name': dev['name']} for dev in tuya_devices]
-            return appliances
+            smartplugs = [{'id': dev['id'], 'name': dev['name']} for dev in tuya_devices]
+            return smartplugs,None,None
+        
         except Exception as e:
             print('Error retrieving Tuya smart plugs:', str(e))
-            return []
+            traceback.print_exc()
+            return [], jsonify({'message': f'Error occurred while retrieving smart plugs: {str(e)}'}), 500
 
     @staticmethod
     def switch(user, app_id, status, session):
@@ -176,13 +181,13 @@ class Tuya():
             cloud = Tuya._login(user, session)  
             command = {"commands": [{"code": "switch_1", "value": status}]}
             result = cloud.sendcommand(app_id, command)
-            return result['result']  
+            return result['result'], None, None
         except Exception as e:
-            Tuya.verify_credentials(user, session)
+            Tuya.verify_credentials(user)
             print('Error Switching Tuya appliance:', str(e))
-            return False
+            traceback.print_exc()
+            return False, {'message': f'Error Switching Tuya appliance: {str(e)}'}, 500
             
-    
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop) 
 cloud = Cloud_interface(loop)

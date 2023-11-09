@@ -17,11 +17,11 @@ def add_appliance_route():
     type = data['type']
     return add_appliance(user_id, name, cloud_id, type)
 
-# @appliance_views.route('/appliance/<appliance_id>', methods=['GET'])
-# @jwt_required()
-# def get_appliance_by_id_route(appliance_id):
-#     user_id = get_jwt_identity()
-#     return get_appliance_by_id(user_id, appliance_id)
+@appliance_views.route('/appliance/<appliance_id>', methods=['GET'])
+@jwt_required()
+def get_appliance_by_id_route(appliance_id):
+    user_id = get_jwt_identity()
+    return get_appliance_by_id(user_id, appliance_id)
 
 @appliance_views.route('/get_all_appliances', methods=['GET'])
 @jwt_required()
@@ -50,3 +50,10 @@ def switch_appliance_route(appliance_id):
     data = request.get_json()
     status = data['status']
     return switch_appliance(user_id, appliance_id, status)
+
+
+@appliance_views.route('/smartplugs', methods=['GET'])
+@jwt_required()
+def get_smart_plugs():
+    user_id = get_jwt_identity()
+    return get_smartplugs(user_id)
