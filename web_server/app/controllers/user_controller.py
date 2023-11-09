@@ -227,17 +227,16 @@ def delete_goal(user_id):
     return jsonify({'message': 'Goal deleted successfully'}), 200
 
 
-def upload_profile_pic(user_id):
+def upload_profile_pic(user_id,file):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
 
     if not user:
         return jsonify({'message': 'User not found.'}), 404
     
-    if 'file' not in request.files:
+    if not file:
         return jsonify({'error': 'No file provided'}), 400
 
-    file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
@@ -257,14 +256,12 @@ def upload_profile_pic(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-def get_profile_pic(user_id):
+def get_profile_pic(user_id,filename):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
-
     if not user:
         return jsonify({'message': 'User not found.'}), 404
     
-    filename = request.args.get('filename')
     if not filename:
         return jsonify({'error': 'No filename provided'}), 400
 

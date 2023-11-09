@@ -75,10 +75,11 @@ def delete_goal_route():
 @jwt_required()
 def upload_profile_pic_route():
     user_id = get_jwt_identity()
-    return upload_profile_pic(user_id)
+    file = request.files['file']
+    return upload_profile_pic(user_id,file)
 
-@user_views.route('/profile_pic', methods=["GET"])
+@user_views.route('/profile_pic/<filename>', methods=["GET"])
 @jwt_required()
-def get_profile_pic_route():
+def get_profile_pic_route(filename):
     user_id = get_jwt_identity()
-    return get_profile_pic(user_id)
+    return get_profile_pic(user_id,filename)
