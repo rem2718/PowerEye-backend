@@ -1,4 +1,4 @@
-# appliance_model.py
+# notified_device_model.py
 from app.extensions import db
 from bson import ObjectId
 
