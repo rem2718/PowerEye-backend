@@ -28,7 +28,7 @@ class User(db.Document):
     current_month_energy = db.FloatField(default=0.0)
     energy_goal = db.FloatField(default=-1.0)
     registration_token = db.StringField(default="")
-    #profile_pic
+    #profile_pic is saved in the server 
     
     meta = {
         'collection': 'Users'  # the real collection name here

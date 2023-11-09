@@ -317,6 +317,9 @@ def get_smartplugs(user_id):
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return jsonify({'message': 'User not found.'}), 404
+        # Get a list of all `cloud_id` values from the user's appliances
+        existing_cloud_ids = [app.cloud_id for app in user.appliances if app.cloud_id]
+
         
         cloud_user = {'id':user.id, 'email': user.email, 'password': user.cloud_password, 'dev1': 'bf16e0689159efb9c5xibt'}  # Create user object
         plug_type = user.cloud_type
@@ -325,7 +328,10 @@ def get_smartplugs(user_id):
         if not smart_plugs:
             return error_message, status_code
         
-        return jsonify({'Smart Plugs': smart_plugs}), 200
+        # Filter the smart plugs based on existing cloud IDs
+        filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
+        
+        return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
 
     except Exception as e:
         traceback.print_exc()
