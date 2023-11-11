@@ -102,10 +102,11 @@ class Collector(Task):
         for cloud_id in apps_ids:
             id = app_map[cloud_id]['id']
             if id not in self.flags or self.flags[id]:
-                updates.append((cloud_id, {'connection_status': False})) 
+                updates.append((id, {'connection_status': False})) 
                 name = app_map[cloud_id]['name']
                 self.fcm.notify(self.user_id, NotifType.DISCONNECTION, {'app_name': name})
                 self.flags[id] = False
+        return updates
             
     def _get_doc_updates(self, cloud_devices, app_map):
         """
@@ -132,7 +133,7 @@ class Collector(Task):
             update = (id, {'status': on_off, 'connection_status': connection_status, 'energy': energy})
             updates.append(update) 
             self._check_disconnected(id, app_map[dev_id]['name'], connection_status)   
-        self._notify_disconnected(apps_ids, app_map, updates)
+        updates = self._notify_disconnected(apps_ids, app_map, updates)
         return doc, updates
        
     def _save_data(self, doc, updates):

@@ -41,23 +41,23 @@ class FCM:
         # Map notification types to user-friendly titles and bodies
         match type:
             case NotifType.CREDS:
-                title = 'Update Your Login'
+                title = 'Update Your Password'
                 body = 'Please update your login information for Meross.'
             case NotifType.DISCONNECTION:
-                title = 'Device Not Working'
-                body = f'Your {data["app_name"]} is currently not working. Check its connection and fix it for better suggestions.'
+                title = 'We can\'t reach your smart plug!'
+                body = f'Your {data["app_name"]} is currently disconnected. Check its connection and fix it for better recommendations'
             case NotifType.GOAL:
-                title = 'Monthly Usage Goal'
-                body = f"You're close to reaching {data['percentage']}% of your monthly usage goal."
+                title = 'Monthly Energy Goal'
+                body = f"You're close to reaching {data['percentage']}% of your monthly energy goal."
             case NotifType.PEAK:
-                title = 'Peak Usage Alert'
-                body = f'Try not to use {data["app_name"]} after 5 PM. Click here to turn it off.'
+                title = 'Peak Usage Alert!'
+                body = f'Try to postpone using {data["app_name"]} after 5 PM. Click here to turn it off.'
             case NotifType.PHANTOM:
-                title = 'Ghost Mode Active'
-                body = f'{data["app_name"]} is in ghost mode. Click here to turn it off.'
+                title = 'Phantom Mode Active!'
+                body = f'{data["app_name"]} is in phantom mode. Click here to turn it off.'
             case NotifType.BASELINE:
-                title = 'Using Too Much'
-                body = f'{data["app_name"]} used more than it should today. Try to use it less.'
+                title = 'Appliance Energy Consumption Increased!'
+                body = f'{data["app_name"]} is used more than it should today. Try to use it less.'
 
         return title, body
 
@@ -71,13 +71,14 @@ class FCM:
         """
         # Get the user's registration token from the database
         try:
-            token = self.db.get_doc('Users', {'_id': user}, {'registration_token': 1})
+            devices = self.db.get_doc('Users', {'_id': user}, {'notified_devices': 1})
 
             title, body = self.map_message(type, data)
 
             # Log the notification
             self.logger.info(f'notify: {type} {data}')  
-            if token:
+            for dev in devices:
+                token = dev['fcm_token']
                 message = messaging.Message(
                 data={
                     "title": title,
@@ -87,7 +88,7 @@ class FCM:
                 )
                 response = messaging.send(message)
                 self.logger.info(f'Notification sent with response: {response}')
-                return response
+            return response
         except:
             self.logger.info('Notification failed to send')
             return False
