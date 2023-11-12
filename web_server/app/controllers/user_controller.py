@@ -1,6 +1,9 @@
 # app\controllers\user_controller.py
 from flask import jsonify ,request ,send_file
 from app.models.user_model import User
+from app.models.room_model import Room
+from app.models.power_model import Power
+from app.models.energy_model import Energy
 from app.models.notified_device_model import Notified_Device # Import the Notified_Device model
 from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
@@ -12,6 +15,7 @@ from app.utils.image_sys import *
 from werkzeug.utils import secure_filename
 import mimetypes
 import os
+from mongoengine.errors import DoesNotExist
 
 
 # Function to validate PowerEye system password
@@ -68,9 +72,10 @@ def signup(email, power_eye_password, cloud_password):
         )
 
         user.save()
-        print("user is saved")
-        return jsonify({'message': 'User created successfully.'}), 201
 
+        # Return the ID of the newly created user
+        return jsonify({'message': 'User created successfully.', 'user_id': str(user.id)}), 201
+    
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -161,6 +166,10 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
         return jsonify({'error': str(e)}), 500
 
 
+
+
+from mongoengine.errors import DoesNotExist
+
 def delete_user(user_id):
     try:
         # Retrieve the user by ID and make sure they are not deleted
@@ -169,14 +178,34 @@ def delete_user(user_id):
         if not user:
             return jsonify({'message': 'User not found.'}), 404
 
+        # Delete rooms associated with the user
+        deleted_rooms = Room.objects(user_id=user.id).delete()
+        if deleted_rooms:
+            print(f"{deleted_rooms} rooms deleted.")
+
+        # Delete powers associated with the user
+        deleted_powers = Power.objects(user=user).delete()
+        if deleted_powers:
+            print(f"{deleted_powers} powers deleted.")
+
+        # Delete energy records associated with the user
+        deleted_energies = Energy.objects(user=user).delete()
+        if deleted_energies:
+            print(f"{deleted_energies} energies deleted.")
+
         # Soft delete the user
         user.is_deleted = True
         user.save()
 
         return jsonify({'message': 'User deleted successfully'}), 200
 
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 
 
