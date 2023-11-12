@@ -183,15 +183,15 @@ def delete_user(user_id):
         if deleted_rooms:
             print(f"{deleted_rooms} rooms deleted.")
 
-        # Delete powers associated with the user
-        deleted_powers = Power.objects(user=user).delete()
-        if deleted_powers:
-            print(f"{deleted_powers} powers deleted.")
+        # # Delete powers associated with the user
+        # deleted_powers = Power.objects(user=user).delete()
+        # if deleted_powers:
+        #     print(f"{deleted_powers} powers deleted.")
 
-        # Delete energy records associated with the user
-        deleted_energies = Energy.objects(user=user).delete()
-        if deleted_energies:
-            print(f"{deleted_energies} energies deleted.")
+        # # Delete energy records associated with the user
+        # deleted_energies = Energy.objects(user=user).delete()
+        # if deleted_energies:
+        #     print(f"{deleted_energies} energies deleted.")
 
         # Soft delete the user
         user.is_deleted = True
