@@ -4,6 +4,8 @@ import logging
 from pymongo import MongoClient
 
 from app.interfaces.db import DB
+
+
 class Mongo(DB):
     """
     MongoDB database interface for performing database operations.
@@ -14,7 +16,7 @@ class Mongo(DB):
         logger (logging.Logger): The logger for logging messages.
         db (pymongo.database.Database): The MongoDB database instance.
     """
-    
+
     def __init__(self, URL, database):
         """
         Constructor for the Mongo class.
@@ -27,7 +29,7 @@ class Mongo(DB):
             client = MongoClient(URL)
             self.db = client[database]
         except:
-            self.logger.error('mongodb init error', exc_info=True)
+            self.logger.error("mongodb init error", exc_info=True)
 
     def get_doc(self, collection, query={}, projection={}, sort=None):
         """
@@ -40,13 +42,13 @@ class Mongo(DB):
         Returns:
             dict or None: The retrieved document or None if not found.
         """
-        try: 
+        try:
             doc = self.db[collection].find_one(query, projection, sort=sort)
-            return doc  
+            return doc
         except:
-            self.logger.error('mongodb read error', exc_info=True) 
+            self.logger.error("mongodb read error", exc_info=True)
             return None
-           
+
     def get_docs(self, collection, query={}, projection={}, sort=None):
         """
         Retrieve multiple documents from the specified collection.
@@ -59,11 +61,11 @@ class Mongo(DB):
         Returns:
             pymongo.cursor.Cursor or None: A cursor for the retrieved documents or None if not found.
         """
-        try: 
+        try:
             docs = self.db[collection].find(query, projection, sort=sort)
-            return docs  
+            return docs
         except:
-            self.logger.error('mongodb read all error', exc_info=True) 
+            self.logger.error("mongodb read all error", exc_info=True)
             return None
 
     def insert_doc(self, collection, doc):
@@ -74,10 +76,10 @@ class Mongo(DB):
             doc (dict): The document to be inserted.
         """
         try:
-            self.db[collection].insert_one(doc)  
+            self.db[collection].insert_one(doc)
         except:
-            self.logger.error('mongodb insert error', exc_info=True) 
-            
+            self.logger.error("mongodb insert error", exc_info=True)
+
     def insert_docs(self, collection, docs):
         """
         Insert multiple documents into the specified collection.
@@ -87,10 +89,10 @@ class Mongo(DB):
             docs (list): The list of documents to be inserted.
         """
         try:
-            self.db[collection].insert_many(docs)  
+            self.db[collection].insert_many(docs)
         except Exception as e:
-            self.logger.error('mongodb insert all error', exc_info=True)
-            
+            self.logger.error("mongodb insert all error", exc_info=True)
+
     def update_appliances(self, collection, id, updates):
         """
         Update appliances information in a document.
@@ -101,15 +103,15 @@ class Mongo(DB):
         """
         try:
             for device_id, values in updates:
-                filter = {'_id':ObjectId(id), 'appliances._id': ObjectId(device_id)}
+                filter = {"_id": ObjectId(id), "appliances._id": ObjectId(device_id)}
                 update = {
-                    '$set': {
-                        f'appliances.$.{key}': value for key, value in values.items()
+                    "$set": {
+                        f"appliances.$.{key}": value for key, value in values.items()
                     }
                 }
-                self.db[collection].update_one(filter, update)                
+                self.db[collection].update_one(filter, update)
         except:
-            self.logger.error('mongodb update appliances error', exc_info=True) 
+            self.logger.error("mongodb update appliances error", exc_info=True)
 
     def update(self, collection, id, field, value, array_filters=None):
         """
@@ -122,8 +124,8 @@ class Mongo(DB):
             array_filters (list, optional): Filters for array updates.
         """
         try:
-            filter = {'_id':ObjectId(id)}
+            filter = {"_id": ObjectId(id)}
             update = {"$set": {field: value}}
             self.db[collection].update_one(filter, update, array_filters=array_filters)
         except:
-            self.logger.error('mongodb update all error', exc_info=True)
+            self.logger.error("mongodb update all error", exc_info=True)

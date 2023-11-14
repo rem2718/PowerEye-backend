@@ -1,8 +1,11 @@
 import logging
+
 from firebase_admin import credentials, messaging
 import firebase_admin
-from app.interfaces.db import DB
+
 from app.types_classes import NotifType
+from app.interfaces.db import DB
+
 
 class FCM:
     """
@@ -14,7 +17,7 @@ class FCM:
         db (DB): An instance of the database connection.
         logger (logging.Logger): The logger for logging messages.
     """
-    
+
     def __init__(self, cred, db: DB):
         """
         Constructor for the FCM class.
@@ -36,27 +39,29 @@ class FCM:
         Returns:
             tuple: A tuple containing the title and body of the notification message.
         """
-        title = body = ''
-        
+        title = body = ""
+
         # Map notification types to user-friendly titles and bodies
         match type:
             case NotifType.CREDS:
-                title = 'Update Your Password'
-                body = 'Please update your login information for Meross.'
+                title = "Update Your Password"
+                body = "Please update your login information for Meross."
             case NotifType.DISCONNECTION:
-                title = 'We can\'t reach your smart plug!'
+                title = "We can't reach your smart plug!"
                 body = f'Your {data["app_name"]} is currently disconnected. Check its connection and fix it for better recommendations'
             case NotifType.GOAL:
-                title = 'Monthly Energy Goal'
+                title = "Monthly Energy Goal"
                 body = f"You're close to reaching {data['percentage']}% of your monthly energy goal."
             case NotifType.PEAK:
-                title = 'Peak Usage Alert!'
+                title = "Peak Usage Alert!"
                 body = f'Try to postpone using {data["app_name"]} after 5 PM. Click here to turn it off.'
             case NotifType.PHANTOM:
-                title = 'Phantom Mode Active!'
-                body = f'{data["app_name"]} is in phantom mode. Click here to turn it off.'
+                title = "Phantom Mode Active!"
+                body = (
+                    f'{data["app_name"]} is in phantom mode. Click here to turn it off.'
+                )
             case NotifType.BASELINE:
-                title = 'Appliance Energy Consumption Increased!'
+                title = "Appliance Energy Consumption Increased!"
                 body = f'{data["app_name"]} is used more than it should today. Try to use it less.'
 
         return title, body
@@ -68,28 +73,34 @@ class FCM:
             user (str): The user's identifier.
             type (NotifType): The type of notification.
             data (dict, optional): Additional data for customizing the message.
+        Returns:
+            list: List of all responses
         """
         # Get the user's registration token from the database
-        try:
-            devices = self.db.get_doc('Users', {'_id': user}, {'notified_devices': 1})
+        self.logger.info(
+            f"Sending a notification:\nuser: {user}\ntype: {type}\ndata: {data}"
+        )
+        devices = self.db.get_doc("Users", {"_id": user}, {"notified_devices": 1})
+        devices = devices["notified_devices"]
 
-            title, body = self.map_message(type, data)
-
-            # Log the notification
-            self.logger.info(f'notify: {type} {data}')  
-            for dev in devices:
-                token = dev['fcm_token']
+        title, body = self.map_message(type, data)
+        responses = []
+        # Log the notification
+        self.logger.info(f"notify: {type} {data}")
+        for dev in devices:
+            try:
+                token = dev["fcm_token"]
                 message = messaging.Message(
-                data={
-                    "title": title,
-                    "body": body,
+                    data={
+                        "title": title,
+                        "body": body,
                     },
-                token=token,
+                    token=token,
                 )
                 response = messaging.send(message)
-                self.logger.info(f'Notification sent with response: {response}')
-            return response
-        except:
-            self.logger.info('Notification failed to send')
-            return False
-
+                self.logger.info(f"Notification sent with response: {response}")
+            except:
+                response = False
+                self.logger.info("Notification failed to send")
+            responses.append(response)
+        return responses

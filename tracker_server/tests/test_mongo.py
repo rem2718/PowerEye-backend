@@ -1,96 +1,120 @@
-# import pytest
-# from pymongo import MongoClient
-# from pymongo.errors import ServerSelectionTimeoutError
-# from app.external_dependencies.mongo import Mongo
-# from pymongo import MongoClient
+from datetime import datetime
+from bson import ObjectId
+import os
 
-# MONGODB_URL = "mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/"
-# TEST_DATABASE = "test"  # Replace with your database name
+from dotenv import load_dotenv
+import pytest
 
-# # MongoDB database client for testing
-# @pytest.fixture
-# def mongo_client():
-#     try:
-#         client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
-#         client.server_info()
-#         return client
-#     except ServerSelectionTimeoutError:
-#         pytest.skip("MongoDB server is not available")
+from app.external_dependencies.mongo import Mongo
 
-# # Fixture to drop the "Mongo" collection before running the tests
-# @pytest.fixture(autouse=True)
-# def drop_mongo_collection(request, mongo_client):
-#     # The finalizer function to drop the collection
-#     def drop():
-#         collection_name = "Mongo"
-#         if collection_name in mongo_client[TEST_DATABASE].list_collection_names():
-#             mongo_client[TEST_DATABASE][collection_name].drop()
-
-#     # Add the finalizer
-#     request.addfinalizer(drop)
-
-# # @pytest.fixture
-# # def create_mongo_collection(mongo_client):
-# #     # Create the collection
-# #     collection_name = "Mongo"
-# #     db = mongo_client[TEST_DATABASE]
-# #     db.create_collection(collection_name)
-# #     yield db[collection_name]  # Return the collection
-
-# # # Fixture to initialize the MongoDB class for testing
-# # @pytest.fixture
-# # def mongo_instance(mongo_client):
-# #     mongo = Mongo(MONGODB_URL, TEST_DATABASE)
-# #     return mongo
-
-# # # Your test functions
-# # # def test_insert_and_retrieve_document(mongo_instance):
-# # #     collection = "Mongo"
-# # #     document = {"_id": 1, "name": "John"}
-
-# # #     # Insert a document
-# # #     mongo_instance.insert_doc(collection, document)
-
-# # #     # Retrieve the inserted document
-# # #     retrieved = mongo_instance.get_doc(collection, {"_id": 1})
-
-# # #     assert retrieved == document
-
-# # # def test_insert_and_retrieve_multiple_documents(mongo_instance):
-# # #     collection = "Mongo"
-# # #     # Insert multiple documents into the collection
-
-# # #     documents = [
-# # #         {"_id": 2, "name": "Sara"},
-# # #         {"_id": 3, "name": "Alice"},
-# # #         {"_id": 4, "name": "Bob"},
-# # #     ]
-# # #     mongo_instance.db[collection].insert_many(documents)
-
-# # #     # Insert multiple documents
-# # #     mongo_instance.insert_docs(collection, documents)
-
-# # #     # Retrieve all documents from the collection
-# # #     retrieved_docs = list(mongo_instance.get_docs(collection))
-
-# # #     assert len(retrieved_docs) == len(documents)
-# # #     assert all(doc in retrieved_docs for doc in documents)
+load_dotenv(os.path.join(".secrets", ".env"))
 
 
-# # def test_update_document_field(mongo_instance):
-# #     collection = "Mongo"
-# #     document = {"_id": 1, "name": "John"}
+@pytest.fixture
+def db_instance():
+    URL = os.getenv("DB_URL")
+    database = "test"
+    db = Mongo(URL, database)
+    return db
 
-# #     # Insert a document
-# #     mongo_instance.insert_doc(collection, document)
 
-# #     # Update the "name" field of the document with _id=1
-# #     new_name = "Abdulrahman"
-# #     updated_document = {"name": new_name}
+def test_get_doc(db_instance):
+    projection = {"_id": 0}
+    sort = [("timestamp", -1)]
+    doc = db_instance.get_doc(
+        "Powers",
+        {"user": ObjectId("64d1548894895e0b4c1bc07f")},
+        projection=projection,
+        sort=sort,
+    )
+    expected_res = {
+        "timestamp": datetime(2023, 11, 15, 1, 51, 31, 872000),
+        "64d161e193d44252699aa219": 261.613,
+        "64d162bf93d44252699aa21c": 10.795,
+        "64d15f9393d44252699aa215": 0.0,
+        "user": ObjectId("64d1548894895e0b4c1bc07f"),
+        "64d1605493d44252699aa216": None,
+        "64d160d293d44252699aa218": 100.9,
+        "64d1629393d44252699aa21b": 0.0,
+    }
+    assert doc == expected_res
+    doc = db_instance.get_doc("Powers", {"user": ObjectId("64d174d494895e0b4c1bc081")})
 
-# #     mongo_instance.update(collection, 1, "name", new_name)
 
-# #     # Retrieve the updated document
-# #     retrieved = mongo_instance.get_doc(collection, {"_id": 1})
+def test_get_docs(db_instance):
+    projection = {"_id": 1}
+    sort = [("timestamp", -1)]
+    docs = db_instance.get_docs(
+        "Powers",
+        {"user": ObjectId("64d154d494895e0b4c1bc081")},
+        projection=projection,
+        sort=sort,
+    )
 
-# #     assert retrieved["name"] == new_name
+    expected_res = [
+        {"_id": ObjectId("6553f9f3c05547956e38e797")},
+        {"_id": ObjectId("6553f9b7c05547956e38e794")},
+        {"_id": ObjectId("6553f97bc05547956e38e791")},
+    ]
+
+    assert list(docs) == expected_res
+
+
+def test_insert_doc(db_instance):
+    doc = {"dummy_field": "dummy_value"}
+    db_instance.insert_doc("Mongo_test", doc)
+
+    assert db_instance.db["Mongo_test"].find_one(doc) is not None
+
+
+def test_insert_docs(db_instance):
+    docs = [{"key": "value1"}, {"key": "value2"}, {"key": "value3"}]
+
+    db_instance.insert_docs("Mongo_test", docs)
+    assert all(db_instance.db["Mongo_test"].find(doc) is not None for doc in docs)
+
+
+def test_update_appliances(db_instance):
+    collection_name = "update_test"
+    user_id = "64d1548894895e0b4c1bc07f"
+    device_updates = [
+        ("6553f9b7c05547956e38e791", {"key1": "value1", "key2": "value2"}),
+        ("6553f9b7c05547956e38e792", {"key2": "value2"}),
+    ]
+
+    test_doc = {
+        "_id": ObjectId(user_id),
+        "appliances": [
+            {
+                "_id": ObjectId("6553f9b7c05547956e38e791"),
+                "key1": "old_value1",
+                "key2": "old_value2",
+            },
+            {"_id": ObjectId("6553f9b7c05547956e38e792"), "key2": "old_value2"},
+        ],
+    }
+
+    db_instance.db[collection_name].insert_one(test_doc)
+    db_instance.update_appliances(collection_name, user_id, device_updates)
+
+    updated_doc = db_instance.db[collection_name].find_one({"_id": ObjectId(user_id)})
+    assert updated_doc is not None
+    assert updated_doc["appliances"][0]["key1"] == "value1"
+    assert updated_doc["appliances"][1]["key2"] == "value2"
+
+
+def test_update(db_instance):
+    collection_name = "update_test"
+    document_id = "6553f9f3c05547956e38e797"
+    field_to_update = "field1"
+    new_value = "new_value"
+    test_doc = {"_id": ObjectId(document_id), "field1": "old_value"}
+
+    db_instance.db[collection_name].insert_one(test_doc)
+    db_instance.update(collection_name, document_id, field_to_update, new_value)
+
+    updated_doc = db_instance.db[collection_name].find_one(
+        {"_id": ObjectId(document_id)}
+    )
+    assert updated_doc is not None
+    assert updated_doc[field_to_update] == new_value

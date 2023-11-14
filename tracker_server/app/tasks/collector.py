@@ -98,6 +98,8 @@ class Collector(Task):
             apps_ids: List of device identifiers.
             app_map: Mapping of cloud IDs to appliance information.
             updates: List of updates to be applied.
+        Returns:
+            list: Updated list of updates.
         """
         for cloud_id in apps_ids:
             id = app_map[cloud_id]['id']

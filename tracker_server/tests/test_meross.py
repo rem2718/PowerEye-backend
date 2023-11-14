@@ -20,14 +20,13 @@ def meross_instance():
 @pytest.mark.asyncio            
 async def test_daily_update_creds():
     meross_mock = Meross({'email': 'mocked_email@gmail.com'})
-    mocked_update_creds = AsyncMock()
-    meross_mock.update_creds = mocked_update_creds
+    meross_mock.update_creds = AsyncMock()
     
     await meross_mock._daily_update_creds()
     meross_mock.prev = datetime.now() - meross_mock.day
     await meross_mock._daily_update_creds()
     
-    mocked_update_creds.assert_called_once()
+    meross_mock.update_creds.assert_called_once()
     
 @pytest.mark.asyncio            
 async def test_meross(meross_instance):
