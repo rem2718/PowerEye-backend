@@ -162,7 +162,7 @@ def get_appliance_by_id(user_id, appliance_id):
         appliance_data = {
             'id': str(appliance._id),
             'name': appliance.name,
-            'type': appliance.type.value,
+            'type': appliance.type,
             'cloud_id': appliance.cloud_id,
             'energy': appliance.energy,
             'is_deleted': appliance.is_deleted,

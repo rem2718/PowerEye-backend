@@ -1,8 +1,8 @@
 # app\views\user_views.py
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.controllers.user_controller import *
-from app.utils.img_sys import *
+
 
 # Create a Blueprint to organize routes
 user_views = Blueprint('user_views', __name__)
@@ -70,26 +70,16 @@ def delete_goal_route():
     user_id = get_jwt_identity()
     return delete_goal(user_id)
 
-@user_views.route('/profile-pic', methods=["POST"])
-@jwt_required()
-def upload_profile_pic_route():
-    user_id = get_jwt_identity()
-    return upload_profile_pic(user_id)
-
-@user_views.route('/get-profile-pic', methods=["GET"])
-@jwt_required()
-def get_profile_pic_route():
-    user_id = get_jwt_identity()
-    return get_profile_pic(user_id)
-
-
-
 @user_views.route('/profile_pic', methods=["POST"])
 @jwt_required()
 def upload_profile_pic_route():
     user_id = get_jwt_identity()
-    file = request.files['file']
-    return upload_profile_pic(user_id,file)
+    file = request.json['file']
+    filename = request.json['filename']
+    extension = request.json['extension']
+    # Concatenate the filename and extension
+    filename_with_extension = filename + '.' + extension
+    return upload_profile_pic(user_id,file,filename_with_extension)
 
 @user_views.route('/profile_pic/<filename>', methods=["GET"])
 @jwt_required()

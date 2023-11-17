@@ -227,8 +227,8 @@ def delete_goal(user_id):
     user.save()
     return jsonify({'message': 'Goal deleted successfully'}), 200
 
-
-def upload_profile_pic(user_id,file):
+#takes the user ID and the base64 as parameters
+def upload_profile_pic(user_id,file,filename_with_extension):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
 
@@ -236,26 +236,19 @@ def upload_profile_pic(user_id,file):
         return jsonify({'message': 'User not found.'}), 404
     
     if not file:
-        return jsonify({'error': 'No file provided'}), 400
+        return jsonify({'error': 'No image data provided'}), 400
 
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file extension'}), 400
+    if not filename_with_extension:
+        return jsonify({'error': 'No filename provided'}), 400
 
     # Generate a unique filename to avoid conflicts
-    filename = secure_filename(file.filename)
-    # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
-    # ensuring that the correct path is formed regardless of the operating system using (/ or \)
-    save_path = os.path.join(UPLOADS_FOLDER, filename)
+    filename = secure_filename(filename_with_extension)
 
     # Save the uploaded profile picture file to the file system.
-    try:
-        file.save(save_path)
-        return jsonify({'message': 'Profile picture uploaded successfully'}),200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if save_base64_image(file, filename):
+        return jsonify({'message': 'Profile picture uploaded successfully'}), 200
+    else:
+        return jsonify({'error': 'Failed to save profile picture'}), 500
     
 def get_profile_pic(user_id,filename):
     # Retrieve the user by ID and make sure they are not deleted
