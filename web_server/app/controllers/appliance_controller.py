@@ -190,7 +190,7 @@ def get_all_appliances(user_id):
                 appliance_data = {
                     'id': str(appliance._id),
                     'name': appliance.name,
-                    'type': appliance.type.value,
+                    'type': appliance.type,
                     # 'cloud_id': appliance.cloud_id,
                     'connection_status': appliance.connection_status,
                     'status': appliance.status,
@@ -329,9 +329,10 @@ def get_smartplugs(user_id):
             return error_message, status_code
         
         # Filter the smart plugs based on existing cloud IDs
-        filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
+        # filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
         
-        return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
+        # return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
+        return jsonify({'Smart Plugs': smart_plugs}), 200
 
     except Exception as e:
         traceback.print_exc()

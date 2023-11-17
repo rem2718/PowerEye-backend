@@ -18,7 +18,6 @@ from bson import ObjectId
 
 
 class User(db.Document):
-    # _id = db.ObjectIdField(primary_key=True)
     email = db.EmailField(required=True)
     password = db.StringField(required=True)
     username = db.StringField(default="")

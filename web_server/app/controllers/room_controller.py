@@ -4,6 +4,7 @@ from app.models.room_model import Room
 from app.models.user_model import User
 from app.models.appliance_model import Appliance
 from mongoengine.errors import DoesNotExist
+import traceback
 
 # Helper function to validate room name
 def validate_room_name(user, name):
@@ -43,10 +44,17 @@ def create_room(user_id, name, appliance_ids):
         if not is_valid_name:
             return error_response, status_code
 
-        for aid in appliance_ids:
-            appliance = next((app for app in user.appliances if str(app._id) == aid and not app.is_deleted), None)
+        # Find and validate if the user has those appliances
+        valid_appliances = []
+        for appliance_id in appliance_ids:
+            appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
             if not appliance:
-                return jsonify({'error': f'Appliance with ID {aid} not found or is deleted.'}), 404
+                return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
+
+            if appliance['is_deleted']:
+                return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
+
+            valid_appliances.append(appliance)
 
 
 
@@ -54,7 +62,7 @@ def create_room(user_id, name, appliance_ids):
         room = Room(name=name, appliances=appliance_ids, user_id=user_id)
         room.save()
 
-        return jsonify({'message': f'Room {name} created successfully.','room_id': room._id}), 201
+        return jsonify({'message': f'Room {name} created successfully.','room_id': str(room.id)}), 201
         
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
@@ -83,18 +91,14 @@ def get_room_appliances(user_id, room_id):
         # Retrieve appliances for the specified room
         room_appliances = []
         for appliance_id in room.appliances:
-            appliance = next((app for app in user.appliances if str(app._id) == appliance_id and not app.is_deleted), None)
+            appliance = next((app for app in user.appliances if app._id == appliance_id and not app.is_deleted), None)
             if appliance:
                 room_appliances.append({
+                    'appliance_id':str(appliance_id),
                     'name': appliance['name'],
-                    'type': appliance['type'].value,
-                    'cloud_id': appliance['cloud_id'],
-                    'energy': appliance['energy'],
-                    'is_deleted': appliance['is_deleted'],
+                    'type': appliance['type'],
                     'connection_status': appliance['connection_status'],
                     'status': appliance['status'],
-                    'baseline_threshold': appliance['baseline_threshold'],
-                    'e_type': appliance['e_type'].value
                 })
                 
         return jsonify({'appliances': room_appliances}), 200
@@ -215,7 +219,7 @@ def get_all_user_rooms(user_id):
 
 
             for appliance_id in room.appliances:
-                appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
+                appliance = next((app for app in user.appliances if app['_id'] == appliance_id), None)
                 if not appliance:
                     return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
 
@@ -229,6 +233,7 @@ def get_all_user_rooms(user_id):
         return jsonify({'rooms': room_list}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     
 def delete_appliance_from_room(user_id, room_id, appliance_id):
