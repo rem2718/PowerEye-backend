@@ -54,10 +54,10 @@ class Master(Task):
                                 trigger='interval', minutes=1)
         self.scheduler.add_job(checker_job.run, id=f'checker_{id}', name=f'checker_{id}',
                                trigger='interval', minutes=1) 
-        # self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
-                                    #  trigger='cron', hour=0, minute=0, second=0 )    
         self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
-                                    trigger='date', run_date=datetime.now() )    
+                                     trigger='cron', hour=0, minute=0, second=0 )    
+        # self.scheduler.add_job(updater_job.run, id=f'updater_{id}', name=f'updater_{id}',
+                                    # trigger='date', run_date=datetime.now() )    
                                      
                 
     def run(self):

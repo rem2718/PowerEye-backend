@@ -10,7 +10,6 @@ from app.recommender import Recommender as PR
 from app.interfaces.task import Task
 from app.types_classes import EType
 
-# TO-DO: check sync between updater and checker, starting the server, when server crashes
 
 class Updater(Task):
     """
@@ -40,27 +39,28 @@ class Updater(Task):
         self.date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         self.logger = logging.getLogger(__name__)    
         
-    def _update_energy(self, user):
+    def _update_energy(self, user, cur_time):
         """
         Update user's energy data for the current month.
         Args:
             user: User document.
+            cur_time: The current time.
         Returns:
             dict: Updated energy data document.
         """
         doc = {}
         doc['user'] = user['_id']
         doc['date'] = self.date
-        cur_time = datetime.now()
-        if cur_time.day == 1:
-            self.db.update('Users', self.user_id, 'current_month_energy', 0) #check
         cur_energy = 0
         for app in user['appliances']:
-            doc[str(app['_id'])] = {'real': app['energy']}
+            doc[str(app['_id'])] = app['energy']
             cur_energy += app['energy']
         month_energy = user['current_month_energy'] + cur_energy
         self.db.update('Users', self.user_id, 'appliances.$[].energy', 0)
-        self.db.update('Users', self.user_id, 'current_month_energy', month_energy)
+        if cur_time.day == 1:
+            self.db.update('Users', self.user_id, 'current_month_energy', 0) 
+        else: 
+            self.db.update('Users', self.user_id, 'current_month_energy', month_energy)
         return doc   
         
     def _yesterday_powers(self):
@@ -82,7 +82,6 @@ class Updater(Task):
         powers = self.db.get_docs('Powers', query, projection, sort)
         return pd.DataFrame(list(powers))
       
-    # check last day of month
     def _cur_month_energy(self):
         """
         Get energy consumption data for the current month.
@@ -132,7 +131,7 @@ class Updater(Task):
         """
         projection = {'current_month_energy': 1, 'appliances._id': 1, 'appliances.energy': 1, 'appliances.e_type': 1}
         user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, projection)
-        doc = self._update_energy(user)
+        doc = self._update_energy(user, datetime.now())
         app_type = {str(app['_id']): app['e_type'] for app in user['appliances']}
         
         powers = self._yesterday_powers()

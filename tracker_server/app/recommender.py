@@ -5,7 +5,6 @@ from sklearn.cluster import KMeans
 import pandas as pd
 
 
-# NOT COMPLETE YET
 class Recommender:
     """
     A class for providing personalized recommendation based on the user appliances power usage.
@@ -25,6 +24,8 @@ class Recommender:
             int: The percentage of goal achievement as an integer value (0-200).
         """
         percentage = month_enegry / goal
+        if percentage > 2:
+            percentage += 1
         rounded = math.floor(percentage * 4) / 4
         return int(rounded * 100) if rounded <= 2 else 0
 
@@ -69,15 +70,15 @@ class Recommender:
         """
         return energy > baseline
 
-    # DONT TEST
-    @staticmethod
-    def fill_na(powers):
-        energy = (powers * 1 / 60) / 1000
-        return energy.sum()
-
-    # DONT TEST
     @staticmethod
     def cluster(appliance):
+        """
+        Cluster appliance data using the KMeans algorithm.
+        Args:
+            appliance (pd.Series): A pandas Series representing the appliance data.
+        Returns:
+            KMeans or False: If clustering is successful, returns the KMeans model. Otherwise, returns False.
+        """
         appliance = appliance.dropna()
         if appliance.shape[0] < Recommender.CLUSTER_THRESHOLD:
             return False
@@ -87,7 +88,7 @@ class Recommender:
         weights = value_counts / total_count
 
         appliance = appliance.drop_duplicates()
-        if appliance.shape[0] > 2:
+        if appliance.shape[0] < 2:
             return False
         X = appliance.values.reshape(-1, 1)
 
@@ -99,6 +100,12 @@ class Recommender:
             return False
 
         return kmeans
+
+    # DONT TEST
+    @staticmethod
+    def fill_na(powers):
+        energy = (powers * 1 / 60) / 1000
+        return energy.sum()
 
     # DONT TEST
     @staticmethod

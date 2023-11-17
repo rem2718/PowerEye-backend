@@ -7,17 +7,21 @@ import os
 # Define the log file path with the current timestamp
 log_file = f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
 # Configure the logging module
-logging.basicConfig(filename=log_file, level=logging.INFO,  format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-from apscheduler.executors.pool import ThreadPoolExecutor
+logging.basicConfig(
+    filename=log_file,
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 from dotenv import load_dotenv
 
 from app.external_dependencies.mongo import Mongo
 from app.external_dependencies.fcm import FCM
 from app.tasks.master import Master
 
-class Scheduler():
+
+class Scheduler:
     """
     A scheduler for managing tasks in the tracker server.
     This class initializes and runs a scheduler that manages tasks using the `APScheduler` library.
@@ -27,26 +31,25 @@ class Scheduler():
         logger (logging.Logger): The logger for logging messages.
         scheduler (BlockingScheduler): The scheduler for managing tasks.
     """
-    
-    def __init__(self, url, db_name, cred): 
+
+    def __init__(self, db, fcm):
         """
         Constructor for the Scheduler class.
 
         Args:
-            url (str): The URL of the database.
-            db_name (str): The name of the database.
-            cred (str): The credentials for Firebase Cloud Messaging (FCM).
-        """   
-        self.db = Mongo(url, db_name)
-        self.fcm = FCM(cred, self.db)
-        self.logger = logging.getLogger(__name__)  
-        num_cores = cpu_count()    
+            db: The database instance.
+            fcm: The FCM (Firebase Cloud Messaging) instance.
+        """
+        self.db = db
+        self.fcm = fcm
+        self.logger = logging.getLogger(__name__)
+        num_cores = cpu_count()
         executors = {
-            'default': ThreadPoolExecutor(num_cores),
+            "default": ThreadPoolExecutor(num_cores),
         }
         job_defaults = {
-            'coalesce': False,
-            'max_instances': 1,
+            "coalesce": False,
+            "max_instances": 1,
         }
         self.scheduler = BlockingScheduler(job_defaults, executors=executors)
 
@@ -55,30 +58,40 @@ class Scheduler():
         Run the scheduler and add the Master job.
         This method initializes the Master job and starts the scheduler, handling potential exceptions.
         """
-        master_job = Master('', self.db, self.fcm, self.scheduler)
-        self.scheduler.add_job(master_job.run, id='Master', name='Master', trigger='interval', minutes=1,
-                               next_run_time=datetime.now())
+        master_job = Master("", self.db, self.fcm, self.scheduler)
+        self.scheduler.add_job(
+            master_job.run,
+            id="Master",
+            name="Master",
+            trigger="interval",
+            minutes=1,
+            next_run_time=datetime.now(),
+        )
         try:
             self.scheduler.start()
-            
+
         except (KeyboardInterrupt, SystemExit):
             self.scheduler.shutdown()
             asyncio.get_event_loop().stop()
-            self.logger.critical('program terminated gracefully')
-  
+            self.logger.critical("program terminated gracefully")
+
+
 def main():
     """
     Main function for starting the scheduler.
     This function loads environment variables, initializes the Scheduler instance, and runs the scheduler.
-    """ 
-    load_dotenv(os.path.join('.secrets', '.env'))
-    URL = os.getenv('DB_URL')
-    CRED = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
-    if os.getenv('ENV') == 'PRODUCTION':
-        database_name = 'hemsproject'
+    """
+    load_dotenv(os.path.join(".secrets", ".env"))
+    URL = os.getenv("DB_URL")
+    CRED = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if os.getenv("ENV") == "PRODUCTION":
+        database_name = "hemsproject"
     else:
-        database_name = 'test'
-    main_scheduler = Scheduler(URL, database_name, CRED)
-    main_scheduler.run()             
+        database_name = "test"
+    db = Mongo(URL, database_name)
+    fcm = FCM(CRED, db)
+    main_scheduler = Scheduler(db, fcm)
+    main_scheduler.run()
+
 
 main()
