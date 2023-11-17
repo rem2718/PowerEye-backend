@@ -19,7 +19,7 @@ def model():
 
 @pytest.fixture(scope="module")
 def appliance():
-    appliance = pd.read_csv("tests/64d154d494895e0b4c1bc081.csv")["charger_20"]
+    appliance = pd.read_csv("tests/unit/64d154d494895e0b4c1bc081.csv")["charger_20"]
     return appliance
 
 

@@ -76,6 +76,7 @@ def test_insert_docs(db_instance):
 
 def test_update_appliances(db_instance):
     collection_name = "update_test"
+    db_instance.db[collection_name].drop()
     user_id = "64d1548894895e0b4c1bc07f"
     device_updates = [
         ("6553f9b7c05547956e38e791", {"key1": "value1", "key2": "value2"}),

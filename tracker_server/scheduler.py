@@ -94,4 +94,5 @@ def main():
     main_scheduler.run()
 
 
-main()
+if __name__ == "__main__":
+    main()

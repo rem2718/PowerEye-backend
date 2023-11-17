@@ -153,7 +153,12 @@ def model():
 
 def test_run(checker_instance):
     checker_instance.run()
-    assert checker_instance.fcm.notify.call_count == 3  # 2 baseline, 1 goal
+    if checker_instance._is_peak_hour(datetime.now().hour):
+        count = 5  # 2 baseline, 1 goal, 2 peak
+    else:
+        count = 3  # 2 baseline, 1 goal
+
+    assert checker_instance.fcm.notify.call_count == count
 
 
 def test_get_apps(checker_instance, apps):
@@ -290,14 +295,15 @@ def test_get_model(checker_instance, model):
     ),
 )
 def test_notify_goal(
-    checker_instance, flag_before, goal, percentage, flag_after, notified
+    checker_instance, flag_before, goal, percentage, flag_after, notified, monkeypatch
 ):
     user = {"energy_goal": goal, "current_month_energy": 0}
     checker_instance.goal_flags[25] = flag_before
-    EPR.check_goal = MagicMock(return_value=percentage)
-
+    monkeypatch.setattr(EPR, 'check_goal', MagicMock(return_value=percentage))
     count = checker_instance.fcm.notify.call_count
+    
     checker_instance._notify_goal(user, 0)
+    
     assert checker_instance.goal_flags[25] == flag_after
     if notified:
         assert checker_instance.fcm.notify.call_count == count + 1
@@ -319,16 +325,16 @@ def test_notify_goal(
     ),
 )
 def test_notify_peak(
-    checker_instance, flag_before, is_peak_hour, peak, flag_after, notified
+    checker_instance, flag_before, is_peak_hour, peak, flag_after, notified, monkeypatch
 ):
     app_id = "mocked_id"
     app = {"status": True, "e_type": EType.SHIFTABLE, "name": "mocked_name"}
 
     checker_instance.peak_flags[app_id] = flag_before
     checker_instance._is_peak_hour = MagicMock(return_value=is_peak_hour)
-    EPR.check_peak = MagicMock(return_value=peak)
-
+    monkeypatch.setattr(EPR, 'check_peak', MagicMock(return_value=peak))
     count = checker_instance.fcm.notify.call_count
+    
     checker_instance._notify_peak(app_id, app)
 
     assert checker_instance.peak_flags[app_id] == flag_after
@@ -352,16 +358,16 @@ def test_notify_peak(
     ),
 )
 def test_notify_phantom(
-    checker_instance, model, flag_before, is_hour_elapsed, phantom, flag_after, notified
+    checker_instance, model, flag_before, is_hour_elapsed, phantom, flag_after, notified, monkeypatch
 ):
     app_id = "mocked_id"
     app = {"status": True, "name": "mocked_name"}
     checker_instance._get_model = MagicMock(return_value=model)
     checker_instance.phantom_flags[app_id] = [flag_before, datetime.now()]
     checker_instance._is_hour_elapsed = MagicMock(return_value=is_hour_elapsed)
-    EPR.check_phantom = MagicMock(return_value=phantom)
-
+    monkeypatch.setattr(EPR, 'check_phantom', MagicMock(return_value=phantom))
     count = checker_instance.fcm.notify.call_count
+    
     checker_instance._notify_phantom(app_id, app, 0)
 
     assert checker_instance.phantom_flags[app_id][0] == flag_after
@@ -385,13 +391,14 @@ def test_notify_phantom(
     ),
 )
 def test_notify_baseline(
-    checker_instance, flag_before, threshold, baseline, flag_after, notified
+    checker_instance, flag_before, threshold, baseline, flag_after, notified, monkeypatch
 ):
     app_id = "mocked_id"
     app = {"energy": 0, "threshold": threshold, "name": "mocked_name"}
     checker_instance.baseline_flags[app_id] = flag_before
-    EPR.check_baseline = MagicMock(return_value=baseline)
+    monkeypatch.setattr(EPR, 'check_baseline', MagicMock(return_value=baseline))
     count = checker_instance.fcm.notify.call_count
+    
     checker_instance._notify_baseline(app_id, app)
 
     assert checker_instance.baseline_flags[app_id] == flag_after
