@@ -3,10 +3,10 @@ from bson import ObjectId
 import logging
 import pickle
 import os
- 
+
 import pandas as pd
 
-from app.recommender import Recommender as PR
+from app.recommender import Recommender as EPR
 from app.interfaces.task import Task
 from app.types_classes import EType
 
@@ -23,8 +23,10 @@ class Updater(Task):
         date: The current date.
         logger: The logger instance.
     """
+
     day = timedelta(days=1)
-    
+    day_threshold = 12 * 60
+
     def __init__(self, id, db, fcm=None, additional=None):
         """
         Constructor for the Updater class.
@@ -37,32 +39,8 @@ class Updater(Task):
         self.user_id = id
         self.db = db
         self.date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        self.logger = logging.getLogger(__name__)    
-        
-    def _update_energy(self, user, cur_time):
-        """
-        Update user's energy data for the current month.
-        Args:
-            user: User document.
-            cur_time: The current time.
-        Returns:
-            dict: Updated energy data document.
-        """
-        doc = {}
-        doc['user'] = user['_id']
-        doc['date'] = self.date
-        cur_energy = 0
-        for app in user['appliances']:
-            doc[str(app['_id'])] = app['energy']
-            cur_energy += app['energy']
-        month_energy = user['current_month_energy'] + cur_energy
-        self.db.update('Users', self.user_id, 'appliances.$[].energy', 0)
-        if cur_time.day == 1:
-            self.db.update('Users', self.user_id, 'current_month_energy', 0) 
-        else: 
-            self.db.update('Users', self.user_id, 'current_month_energy', month_energy)
-        return doc   
-        
+        self.logger = logging.getLogger(__name__)
+
     def _yesterday_powers(self):
         """
         Get power consumption data for the previous day.
@@ -71,44 +49,73 @@ class Updater(Task):
         """
         previous_day = self.date - self.day
         query = {
-            'user': ObjectId(self.user_id),
-            'timestamp': {
-                '$gte': previous_day.replace(hour=0, minute=0, second=0),
-                '$lt': previous_day.replace(hour=23, minute=59, second=59)
-            }
+            "user": ObjectId(self.user_id),
+            "timestamp": {
+                "$gte": previous_day.replace(hour=0, minute=0, second=0),
+                "$lt": previous_day.replace(hour=23, minute=59, second=59),
+            },
         }
-        projection = {'timestamp':0, 'user':0, '_id':0}
-        sort = [('timestamp', 1)]
-        powers = self.db.get_docs('Powers', query, projection, sort)
+        projection = {"user": 0, "_id": 0}
+        sort = [("timestamp", 1)]
+        powers = self.db.get_docs("Powers", query, projection, sort)
         return pd.DataFrame(list(powers))
-      
-    def _cur_month_energy(self):
+
+    def _get_energys(self):
         """
-        Get energy consumption data for the current month.
+        Get all energy historical data.
         Returns:
             DataFrame: Dataframe containing energy consumption data.
         """
-        first_day = self.date.replace(day=1)
-        yesterday = self.date - self.day
-        last_day= self.date.replace(
-            day= yesterday.day,
-            hour=23,
-            minute=59,
-            second=59,
-            microsecond=999
+        query = {"user": ObjectId(self.user_id)}
+        projection = {"date": 0, "user": 0, "_id": 0}
+        sort = [("date", 1)]
+        energys = self.db.get_docs("Energys", query, projection, sort)
+        return pd.DataFrame(list(energys))
+
+    def _generate_yesterday_energys(self, appliances, powers):
+        """
+        Generate a dictionary of energy values for each appliance based on yesterday power data.
+        Args:
+            appliances (list): List of dictionaries representing appliances data.
+            powers (DataFrame): Pandas DataFrame containing historical power consumption data.
+        Returns:
+            dict: Appliance IDs mapped to corresponding energy values. If an appliance has excessive missing
+            data, its energy value is set to negative.
+        """
+        energys = {}
+        powers["timestamp"] = powers["timestamp"].apply(
+            lambda x: x.replace(second=0, microsecond=0)
         )
-        query = {
-            'user': ObjectId(self.user_id),
-            'timestamp': {
-                '$gte': first_day,
-                '$lt': last_day
-            }
-        }
-        projection = {'date':0, 'user':0, '_id':0}
-        sort = [('date', 1)]
-        energys = self.db.get_docs('Energys_test', query, projection, sort)
-        return pd.DataFrame(list(energys))  
-    
+        powers = powers.sort_values(by="timestamp")
+        powers = powers.set_index("timestamp")
+
+        for app in appliances:
+            if app["is_deleted"]:
+                continue
+            app_id = str(app["_id"])
+            powers[app_id] = powers[app_id].ffill(limit=5)
+            daily_null_count = powers[app_id].isnull().sum()
+            energys[app_id] = app["energy"]
+            if daily_null_count > self.day_threshold:
+                energys[app_id] = app["energy"] * -1
+        return energys
+
+    def _update_energy(self, energys, cur_energy, cur_date):
+        """
+        Update user energy-related information based on daily and monthly energy consumption.
+        Args:
+            energys (dict): Appliance IDs and their corresponding energy values.
+            cur_energy (float): The current energy consumption for the month.
+            cur_date (datetime): The current date.
+        """
+        yesterday_energy = sum(abs(value) for value in energys.values())
+        month_energy = yesterday_energy + cur_energy
+        self.db.update("Users", self.user_id, "appliances.$[].energy", 0)
+        if cur_date.day == 1:
+            self.db.update("Users", self.user_id, "current_month_energy", 0)
+        else:
+            self.db.update("Users", self.user_id, "current_month_energy", month_energy)
+
     def _dump_model(self, type, app_id, model):
         """
         Dump machine learning model to a file.
@@ -117,44 +124,73 @@ class Updater(Task):
             app_id: Appliance identifier.
             model: Machine learning model object.
         """
-        folder_path = f'models_filesystem/{type}_models/{self.user_id}'
+        folder_path = f"models_filesystem/{type}_models/{self.user_id}"
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        file_path = os.path.join(folder_path, f'{app_id}.pkl')
+        file_path = os.path.join(folder_path, f"{app_id}.pkl")
         file = open(file_path, "wb")
         pickle.dump(model, file)
         file.close()
- 
+
+    def _apply_cluster(self, app_id, e_type, powers):
+        """
+        Apply clustering to the power consumption data for a specific appliance.
+        Args:
+            app_id (str): The identifier of the appliance.
+            e_type (str): The energy type of the appliance.
+            powers (dict): Appliance IDs maps to power consumption data.
+        """
+        if e_type == EType.PHANTOM.value:
+            power = powers[app_id]
+            cluster = EPR.cluster(power)
+            if cluster:
+                self._dump_model("cluster", app_id, cluster)
+                self.logger.info(f"cluster_{app_id} is dumped successfully")
+
+    def _apply_forecast(self, app_id, energys):
+        """
+        Apply energy forecast to an appliance and update related information.
+        Args:
+            app_id (str): Appliance identifier.
+            energys (dict): Appliance IDs and their corresponding energy values.
+        """
+        forcast, threshold = EPR.energy_forecast(app_id, energys[app_id])
+        if forcast:
+            self._dump_model("forecast", app_id, forcast)
+            self.db.update(
+                "Users",
+                self.user_id,
+                "appliances.$[elem].baseline_threshold",
+                threshold,
+                [{"elem._id": ObjectId(app_id)}],
+            )
+            self.logger.info(f"forecast_{app_id} is dumped successfully")
+
     def run(self):
         """
         Run the updater task to update appliance energy data and models.
         """
-        projection = {'current_month_energy': 1, 'appliances._id': 1, 'appliances.energy': 1, 'appliances.e_type': 1}
-        user = self.db.get_doc('Users', {'_id': ObjectId(self.user_id)}, projection)
-        doc = self._update_energy(user, datetime.now())
-        app_type = {str(app['_id']): app['e_type'] for app in user['appliances']}
-        
+        projection = {"current_month_energy": 1, "appliances": 1}
+        user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projection)
+        appliances = user["appliances"]
+
         powers = self._yesterday_powers()
-        energys = self._cur_month_energy()
-        for app in powers.columns:
-            if powers.shape[0]:
-                energy = PR.fill_na(powers[app])
-                doc[app]['imputed'] = energy
-                if app_type[app] == EType.PHANTOM.value:
-                    power = powers[app]
-                    if power.shape[0] >= 1:              
-                        cluster = PR.cluster(power) 
-                        if cluster:
-                            self._dump_model('cluster', app, cluster)
-                            self.logger.info(f'cluster_{app} is dumped successfully')
-                            
-            if energys.shape[0]:
-                forcast, threshold = PR.energy_forecasting(app, energys[app])
-                if forcast:
-                    self._dump_model('forcast', app, forcast)
-                    array_filter = [{'elem._id': ObjectId(app)}]
-                    self.db.update('Users', self.user_id, 'appliances.$[elem].baseline_threshold', threshold, array_filter)
-                    self.logger.info(f'forcast_{app} is dumped successfully')
-                
-        self.db.insert_doc('Energys_test', doc)
+        energys = self._get_energys()
+        yesterday_energys = self._generate_yesterday_energys(appliances, powers.copy())
+
+        self._update_energy(
+            yesterday_energys, user["current_month_energy"], datetime.now()
+        )
+        yesterday_energys["user"] = ObjectId(self.user_id)
+        yesterday_energys["date"] = self.date
+        energys = pd.concat(
+            [energys, pd.DataFrame([yesterday_energys])], ignore_index=True
+        )
+
+        for app in appliances:
+            app_id = str(app["_id"])
+            self._apply_cluster(app_id, app["e_type"], powers)
+            self._apply_forecast(app_id, energys)
+
+        self.db.insert_doc("Energys", yesterday_energys)
         self.date += self.day

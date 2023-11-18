@@ -29,8 +29,6 @@ class Checker(Task):
 
     shiftable = [EType.SHIFTABLE.value, EType.PHANTOM.value]
     hour = timedelta(hours=1)
-    peak_start = 13
-    peak_end = 17
 
     def __init__(self, id, db, fcm, additional=None):
         """
@@ -108,16 +106,6 @@ class Checker(Task):
             self.peak_flags.clear()
             self.baseline_flags.clear()
 
-    def _is_peak_hour(self, cur_hour):
-        """
-        Check if the current hour is within the peak hours.
-        Args:
-            cur_hour (int): Current hour.
-        Returns:
-            bool: True if the current hour is within the peak hours, False otherwise.
-        """
-        return self.peak_start <= cur_hour < self.peak_end
-
     def _is_hour_elapsed(self, app_id):
         """
         Check if an hour is elapsed for a specific appliance after phantom notification.
@@ -176,8 +164,8 @@ class Checker(Task):
         name = app["name"]
         if app_id not in self.peak_flags:
             self.peak_flags[app_id] = True
-        if self.peak_flags[app_id] and self._is_peak_hour(datetime.now().hour):
-            if EPR.check_peak(status, e_type, self.shiftable):
+        if self.peak_flags[app_id]:
+            if EPR.check_peak(datetime.now().hour, status, e_type, self.shiftable):
                 self.fcm.notify(self.user_id, NotifType.PEAK, {"app_name": name})
                 self.peak_flags[app_id] = False
 

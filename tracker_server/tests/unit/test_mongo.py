@@ -22,7 +22,7 @@ def test_get_doc(db_instance):
     projection = {"_id": 0}
     sort = [("timestamp", -1)]
     doc = db_instance.get_doc(
-        "Powers",
+        "Powers_test",
         {"user": ObjectId("64d1548894895e0b4c1bc07f")},
         projection=projection,
         sort=sort,
@@ -38,14 +38,13 @@ def test_get_doc(db_instance):
         "64d1629393d44252699aa21b": 0.0,
     }
     assert doc == expected_res
-    doc = db_instance.get_doc("Powers", {"user": ObjectId("64d174d494895e0b4c1bc081")})
 
 
 def test_get_docs(db_instance):
     projection = {"_id": 1}
     sort = [("timestamp", -1)]
     docs = db_instance.get_docs(
-        "Powers",
+        "Powers_test",
         {"user": ObjectId("64d154d494895e0b4c1bc081")},
         projection=projection,
         sort=sort,
@@ -75,7 +74,7 @@ def test_insert_docs(db_instance):
 
 
 def test_update_appliances(db_instance):
-    collection_name = "update_test"
+    collection_name = "Update_test"
     db_instance.db[collection_name].drop()
     user_id = "64d1548894895e0b4c1bc07f"
     device_updates = [
@@ -105,7 +104,7 @@ def test_update_appliances(db_instance):
 
 
 def test_update(db_instance):
-    collection_name = "update_test"
+    collection_name = "Update_test"
     document_id = "6553f9f3c05547956e38e797"
     field_to_update = "field1"
     new_value = "new_value"

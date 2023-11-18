@@ -14,6 +14,7 @@ class Mongo(DB):
 
     Attributes:
         logger (logging.Logger): The logger for logging messages.
+        client (pymongo.MongoClient): The MongoDB client instance
         db (pymongo.database.Database): The MongoDB database instance.
     """
 
@@ -26,8 +27,8 @@ class Mongo(DB):
         """
         self.logger = logging.getLogger(__name__)
         try:
-            client = MongoClient(URL)
-            self.db = client[database]
+            self.client = MongoClient(URL)
+            self.db = self.client[database]
         except:
             self.logger.error("mongodb init error", exc_info=True)
 

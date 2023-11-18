@@ -54,9 +54,9 @@ class Meross(Plug):
             )
             self.manager = MerossManager(http_client=self.client)
             self.loggedin = True
-        except:
+        except Exception as e:
             self.loggedin = False
-            self.logger.error("meross login error")
+            self.logger.error("meross login error", exc_info=True)
 
     async def _logout(self):
         """

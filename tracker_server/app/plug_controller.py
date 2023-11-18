@@ -3,8 +3,9 @@ import asyncio
 from app.external_dependencies.meross_module import Meross
 from app.external_dependencies.tuya_module import Tuya
 from app.types_classes import PlugType
-          
-class PlugController():
+
+
+class PlugController:
     """
     A controller for different types of smart plug devices (sync and async).
     Attributes:
@@ -12,8 +13,8 @@ class PlugController():
         plug: An instance of the smart plug device (either Meross, Tuya or other).
         is_async (bool): True if the device interaction is asynchronous, False otherwise.
     """
-    
-    def __init__(self,  event_loop:asyncio.AbstractEventLoop, data:dict):
+
+    def __init__(self, event_loop: asyncio.AbstractEventLoop, data: dict):
         """
         Constructor for the PlugController class.
         Args:
@@ -22,7 +23,7 @@ class PlugController():
         """
         self.loop = event_loop
         self.plug, self.is_async = self._create_plug(data)
-                
+
     def _create_plug(self, data):
         """
         Create a plug instance based on the 'type' field in the 'data' dictionary.
@@ -31,10 +32,12 @@ class PlugController():
         Returns:
             tuple: A plug instance and a boolean indicating whether the device interaction is asynchronous (True) or not (False).
         """
-        match data['type']:
-            case PlugType.MEROSS.value: return Meross(data), True
-            case PlugType.TUYA.value: return Tuya(data), False
-     
+        match data["type"]:
+            case PlugType.MEROSS.value:
+                return Meross(data), True
+            case PlugType.TUYA.value:
+                return Tuya(data), False
+
     def _run_async(self, async_func):
         """
         Run an asynchronous function using the event loop.
@@ -44,8 +47,8 @@ class PlugController():
             Any: The result of the asynchronous function.
         """
         return self.loop.run_until_complete(async_func())
-               
-    def login(self, password):
+
+    def login(self, password=None):
         """
         Log in to the Plug device cloud using a password.
         Args:
@@ -57,7 +60,7 @@ class PlugController():
             return self._run_async(lambda: self.plug.login(password))
         else:
             return self.plug.login(password)
-           
+
     def update_creds(self):
         """
         Update the credentials used to log in to the Plug Cloud.
@@ -66,8 +69,8 @@ class PlugController():
             self._run_async(lambda: self.plug.update_creds())
         else:
             self.plug.update_creds()
-        
-    def get_devices(self):  
+
+    def get_devices(self):
         """
         Retrieve a list of devices associated with the Plug cloud.
         Returns:
@@ -90,8 +93,8 @@ class PlugController():
             return self._run_async(lambda: self.plug.get_id(dev))
         else:
             return self.plug.get_id(dev)
-        
-    def get_info(self, dev): 
+
+    def get_info(self, dev):
         """
         Get information about a specific device.
         Args:
@@ -102,5 +105,4 @@ class PlugController():
         if self.is_async:
             return self._run_async(lambda: self.plug.get_info(dev))
         else:
-            return self.plug.get_info(dev)    
-            
+            return self.plug.get_info(dev)

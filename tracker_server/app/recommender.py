@@ -12,6 +12,8 @@ class Recommender:
 
     CLUSTER_THRESHOLD = 1000
     SILHOUETTE_THRESHOLD = 0.5
+    PEAK_START = 13
+    PEAK_END = 17
 
     @staticmethod
     def check_goal(month_enegry: float, goal: float):
@@ -30,17 +32,19 @@ class Recommender:
         return int(rounded * 100) if rounded <= 2 else 0
 
     @staticmethod
-    def check_peak(status, e_type, types):
+    def check_peak(cur_hour, status, e_type, types):
         """
         Check if a shiftable device is on during peak time.
         Args:
+            cur_hour (int): Current hour.
             status (boolean): The status (ON/OFF) of the device.
-            e_type (EType): The energy type of the device.
+            e_type (int): The energy type of the device.
             types (list): A list of shiftable devices types.
         Returns:
             bool: True if the device is shiftable and on, False otherwise.
         """
-        return status and e_type in types
+        is_peak = Recommender.PEAK_START <= cur_hour < Recommender.PEAK_END
+        return is_peak and status and e_type in types
 
     @staticmethod
     def check_phantom(model, power, status):
@@ -101,18 +105,10 @@ class Recommender:
 
         return kmeans
 
-    # DONT TEST
-    @staticmethod
-    def fill_na(powers):
-        energy = (powers * 1 / 60) / 1000
-        return energy.sum()
-
-    # DONT TEST
     @staticmethod
     def _preprocessing(energy):
         pass
 
-    # DONT TEST
     @staticmethod
-    def energy_forecasting(app, energys):
+    def energy_forecast(app, energys):
         return False, -1

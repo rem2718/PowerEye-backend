@@ -1,3 +1,4 @@
+from bson import ObjectId
 import logging
 
 from firebase_admin import credentials, messaging
@@ -14,6 +15,7 @@ class FCM:
     and sending notifications to users.
 
     Attributes:
+        app (firebase_admin.App): firebase app.
         db (DB): An instance of the database connection.
         logger (logging.Logger): The logger for logging messages.
     """
@@ -26,7 +28,7 @@ class FCM:
             db (DB): An instance of the database connection.
         """
         creds = credentials.Certificate(cred)
-        firebase_admin.initialize_app(creds)
+        self.app = firebase_admin.initialize_app(creds)
         self.db = db
         self.logger = logging.getLogger(__name__)
 
@@ -80,7 +82,9 @@ class FCM:
         self.logger.info(
             f"Sending a notification:\nuser: {user}\ntype: {type}\ndata: {data}"
         )
-        devices = self.db.get_doc("Users", {"_id": user}, {"notified_devices": 1})
+        devices = self.db.get_doc(
+            "Users", {"_id": ObjectId(user)}, {"notified_devices": 1}
+        )
         devices = devices["notified_devices"]
 
         title, body = self.map_message(type, data)

@@ -52,18 +52,42 @@ def test_check_goal(month_enegry, goal, output):
 
 
 @pytest.mark.parametrize(
-    ("status", "e_type", "output"),
+    ("cur_hour", "status", "e_type", "output"),
     (
-        (True, 1, False),
-        (True, 2, True),
-        (True, 3, True),
-        (False, 1, False),
-        (False, 2, False),
-        (False, 3, False),
+        (12, False, 1, False),
+        (12, False, 2, False),
+        (12, False, 3, False),
+        (12, True, 1, False),
+        (12, True, 2, False),
+        (12, True, 3, False),
+        (13, False, 1, False),
+        (13, False, 2, False),
+        (13, False, 3, False),
+        (13, True, 1, False),
+        (13, True, 2, True),
+        (13, True, 3, True),
+        (14, False, 1, False),
+        (14, False, 2, False),
+        (14, False, 3, False),
+        (14, True, 1, False),
+        (14, True, 2, True),
+        (14, True, 3, True),
+        (17, False, 1, False),
+        (17, False, 2, False),
+        (17, False, 3, False),
+        (17, True, 1, False),
+        (17, True, 2, False),
+        (17, True, 3, False),
+        (19, False, 1, False),
+        (19, False, 2, False),
+        (19, False, 3, False),
+        (19, True, 1, False),
+        (19, True, 2, False),
+        (19, True, 3, False),
     ),
 )
-def test_check_peak(status, e_type, output):
-    res = EPR.check_peak(status, e_type, [EType.PHANTOM.value, EType.SHIFTABLE.value])
+def test_check_peak(cur_hour, status, e_type, output):
+    res = EPR.check_peak(cur_hour, status, e_type, [EType.PHANTOM.value, EType.SHIFTABLE.value])
     assert res == output
 
 
