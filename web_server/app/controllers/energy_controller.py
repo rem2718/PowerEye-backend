@@ -7,7 +7,7 @@ from datetime import datetime, date, timedelta
 from dateutil.relativedelta import relativedelta
 import traceback
 from app.utils.enums import Timeframe
-
+from calendar import month_name,day_name
 
 
 # Function to validate date format
@@ -25,7 +25,7 @@ def validate_date_range(start_date, end_date):
 # Function to get energy consumption
 def get_energy(user_id, interval, time_since_current, room_id=None, appliance_id=None):
     try:
-        # Assuming current date is 11/6/2023
+
         current_date = datetime.now()  
 
         # Calculate start and end dates based on interval and time_since_current
@@ -49,10 +49,11 @@ def get_energy(user_id, interval, time_since_current, room_id=None, appliance_id
             start_date = (current_date.replace(day=1) - timedelta(weeks=time_since_current*4)).replace(day=1)
             # Calculate the last day of the target month
             end_date = (start_date.replace(month=start_date.month+1) - timedelta(days=1))
+            name= month_name[start_date.month]
         elif interval == Timeframe.YEARLY:
-            # Find the first day of the target month
+            # Find the first day of the target year
             start_date = current_date.replace(month=1, day=1, year=current_date.year - time_since_current)
-            # Calculate the last day of the target month
+            # Calculate the last day of the target year
             end_date = (start_date.replace(year=start_date.year + 1) - timedelta(days=1))
         else:
             raise ValueError(f"Invalid interval: {interval}")
@@ -93,17 +94,50 @@ def calculate_appliance_energy_consumption(user_id, appliance_id, start_date, en
             return make_response(jsonify({'message': 'No energy documents found for this user in the specified date range.'}), 404)
 
         # Calculate energy consumption values
-        Energy_values = []
+        if (end_date - start_date).days > 31:  # Check if yearly
+            monthly_energy_values = {month: 0 for month in range(1, 13)}
 
-        for energy_doc in energy_documents:
-            if appliance_id in energy_doc:
+            for energy_doc in energy_documents:
+                total_energy_value = 0
                 if energy_doc.date == datetime.now().date():
-                    Energy_value = appliance.energy  # Update the last added value
+                    total_energy_value += appliance.energy 
                 else:
-                    Energy_value = abs(getattr(energy_doc, appliance_id))
-                Energy_values.append(Energy_value)
+                    total_energy_value += abs(getattr(energy_doc, str(appliance._id)))
 
-        return make_response(jsonify({'energy_values': Energy_values}))
+                month = energy_doc.date.month
+                monthly_energy_values[month] += total_energy_value
+
+            # Return the result with month names
+            month_names = [month_name[month] for month in range(1, 13)]
+            result = [{'month': month_names[i], 'energy_value': monthly_energy_values[i + 1]} for i in range(12)]
+        
+            return make_response(jsonify({'energy_values': result}), 200)
+
+        
+        else:
+            Energy_values = []
+
+            for energy_doc in energy_documents:
+                if appliance_id in energy_doc:
+                    if energy_doc.date == datetime.now().date():
+                        Energy_value = appliance.energy  # Update the last added value
+                    else:
+                        Energy_value = abs(getattr(energy_doc, appliance_id))
+                    
+                    # Get the day name of the current energy document
+                    day_name_value = day_name[energy_doc.date.weekday()]
+                    
+                    # Append a tuple containing (day_name, Energy_value) to the Energy_values list
+                    Energy_values.append((day_name_value, Energy_value))
+                                
+            result=Energy_values
+        
+        
+            result=Energy_values
+            month = month_name[start_date.month]
+                
+                
+            return make_response(jsonify({'month':month,'energy_values': result}), 200) 
 
 
     except Exception as e:
@@ -126,11 +160,11 @@ def calculate_room_energy_consumption(user_id, room_id, start_date, end_date):
         room = Room.objects(id=room_id, user_id=user_id).first()
         if not room:
             return make_response(jsonify({'message': 'Room not found'}), 404)
-
-        appliance_ids_in_room = set(str(appliance_id) for appliance_id in room.appliances)
+        
+        print (room.appliances)
 
         # Filter out deleted appliances
-        appliances_in_room = [app for app in user.appliances if str(app._id) in appliance_ids_in_room and not app.is_deleted]
+        appliances_in_room = [app for app in user.appliances if app._id in room.appliances and not app.is_deleted]
 
         
         # Query energy documents for the specified date range and sort by date in ascending order
@@ -140,22 +174,46 @@ def calculate_room_energy_consumption(user_id, room_id, start_date, end_date):
             return make_response(jsonify({'message': 'No energy documents found for this user in the specified date range.'}), 404)
 
         # Calculate energy consumption values
-        Energy_values = []
+        
+        if (end_date - start_date).days > 31:  # Check if yearly
+            monthly_energy_values = {month: 0 for month in range(1, 13)}
+            for energy_doc in energy_documents:
+                total_energy_value = 0
 
-        for energy_doc in energy_documents:
-            total_energy_value = 0
+                for appliance in appliances_in_room:
+                    if str(appliance._id) in energy_doc:
+                        if energy_doc.date == datetime.now().date():
+                            total_energy_value+= appliance.energy 
+                        else:
+                            total_energy_value += abs(getattr(energy_doc, str(appliance._id)))
+                        month = energy_doc.date.month
+                        monthly_energy_values[month] += total_energy_value
+            # Return the result with month names
+            month_names = [month_name[month] for month in range(1, 13)]
+            result = [{'month': month_names[i], 'energy_value': monthly_energy_values[i + 1]} for i in range(12)]    
+            return make_response(jsonify({'energy_values': result}), 200)
+        else:
+            Energy_values = []
 
-            for appliance_id in appliance_ids_in_room:
-                if appliance_id in energy_doc:
-                    total_energy_value += abs(getattr(energy_doc, appliance_id))
+            for energy_doc in energy_documents:
+                total_energy_value = 0
 
-            Energy_values.append(total_energy_value)
+                for appliance in appliances_in_room:
+                    if str(appliance._id) in energy_doc:
+                        if energy_doc.date == datetime.now().date():
+                            total_energy_value+= appliance.energy 
+                        else:
+                            total_energy_value += abs(getattr(energy_doc, str(appliance._id)))
+                # Get the day name of the current energy document            
+                day_name_value = day_name[energy_doc.date.weekday()]
+                # Append a tuple containing (day_name, Energy_value) to the Energy_values list
+                Energy_values.append((day_name_value, total_energy_value))
 
-            if energy_doc.date == datetime.now().date():
-                # If the date in energy document is the current date, read from appliance model
-                appliances_in_room = [app for app in user.appliances if str(app._id) in appliance_ids_in_room]
-                Energy_values[-1] = sum(appliance.energy for appliance in appliances_in_room)
-        return make_response(jsonify({'energy_values': Energy_values}), 200)
+            result=Energy_values
+            month = month_name[start_date.month]
+                
+                
+            return make_response(jsonify({'month_name':month,'energy_values': result}), 200)
 
     except Exception as e:
         traceback.print_exc()

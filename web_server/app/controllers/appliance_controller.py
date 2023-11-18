@@ -20,8 +20,8 @@ def map_appliance_type_to_e_type(appliance_type):
         ApplianceType.LIGHTING: EType.NONE,
         ApplianceType.HEATER: EType.NONE,
         ApplianceType.COOKER_MAKER: EType.NONE,
-        ApplianceType.MIXER: EType.NONE,
-        ApplianceType.CLOCK_ALEXA: EType.NONE,
+        ApplianceType.BLENDER: EType.NONE,
+        ApplianceType.ALEXA: EType.NONE,
         ApplianceType.HAIR_DRYER: EType.NONE,
         ApplianceType.CAMERA: EType.NONE,
         ApplianceType.WASHING_MACHINE: EType.SHIFTABLE,
@@ -34,8 +34,7 @@ def map_appliance_type_to_e_type(appliance_type):
         ApplianceType.PRINTER: EType.PHANTOM,
         ApplianceType.CHARGER: EType.PHANTOM,
         ApplianceType.RECEIVER: EType.PHANTOM,
-        ApplianceType.SEWING_MACHINE: EType.PHANTOM,
-        ApplianceType.SPORTS_MACHINE: EType.PHANTOM,
+        ApplianceType.SPORTS_MACHINE: EType.PHANTOM
     }
     return appliance_type_to_e_type.get(appliance_type)
 
