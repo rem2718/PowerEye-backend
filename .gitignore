@@ -1,6 +1,12 @@
-pow_env/
 __pycache__/
 .secrets/
+.vscode
+venv/
 .env
-.vscode/
+.env.testing
+.flaskenv
 models_filesystem/
+logs/
+.pytest_cache
+.env.testing
+.flaskenv
