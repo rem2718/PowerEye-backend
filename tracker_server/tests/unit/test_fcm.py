@@ -49,7 +49,7 @@ def fcm_instance():
             {"percentage": 25},
             (
                 "Monthly Energy Goal",
-                "You're close to reaching 25% of your monthly energy goal.",
+                "You're close to reach 25% of your monthly energy goal.",
             ),
         ),
         (

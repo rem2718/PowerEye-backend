@@ -53,7 +53,7 @@ class FCM:
                 body = f'Your {data["app_name"]} is currently disconnected. Check its connection and fix it for better recommendations'
             case NotifType.GOAL:
                 title = "Monthly Energy Goal"
-                body = f"You're close to reaching {data['percentage']}% of your monthly energy goal."
+                body = f"You're close to reach {data['percentage']}% of your monthly energy goal."
             case NotifType.PEAK:
                 title = "Peak Usage Alert!"
                 body = f'Try to postpone using {data["app_name"]} after 5 PM. Click here to turn it off.'
