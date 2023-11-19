@@ -257,7 +257,7 @@ def delete_goal(user_id):
     return jsonify({'message': 'Goal deleted successfully'}), 200
 
 
-def upload_profile_pic(user_id,file):
+def upload_profile_pic(user_id, file):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
 
@@ -274,7 +274,7 @@ def upload_profile_pic(user_id,file):
         return jsonify({'error': 'Invalid file extension'}), 400
 
     # Generate a unique filename to avoid conflicts
-    filename = secure_filename(file.filename)
+    filename = f'{user_id}.png'
     # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
     # ensuring that the correct path is formed regardless of the operating system using (/ or \)
     save_path = os.path.join(UPLOADS_FOLDER, filename)
@@ -286,16 +286,14 @@ def upload_profile_pic(user_id,file):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-def get_profile_pic(user_id,filename):
+def get_profile_pic(user_id):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
     if not user:
         return jsonify({'message': 'User not found.'}), 404
-    
-    if not filename:
-        return jsonify({'error': 'No filename provided'}), 400
 
     try:
+        filename = f'{user_id}.png'
         file_path = os.path.join(UPLOADS_FOLDER, filename)
         # Guess the mimetype(extension: png, jpg...) of the file based on the file path
         mimetype, _ = mimetypes.guess_type(file_path)

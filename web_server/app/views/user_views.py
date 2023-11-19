@@ -5,91 +5,101 @@ from app.controllers.user_controller import *
 
 
 # Create a Blueprint to organize routes
-user_views = Blueprint('user_views', __name__)
+user_views = Blueprint("user_views", __name__)
+
 
 # Define routes using the imported functions
-@user_views.route('/signup', methods=['POST'])
+@user_views.route("/signup", methods=["POST"])
 def signup_route():
     data = request.get_json()
-    email = data['email']
-    power_eye_password = data['power_eye_password']
-    cloud_password = data['cloud_password']
+    email = data["email"]
+    power_eye_password = data["power_eye_password"]
+    cloud_password = data["cloud_password"]
     return signup(email, power_eye_password, cloud_password)
 
-@user_views.route('/login', methods=['POST'])
+
+@user_views.route("/login", methods=["POST"])
 def login_route():
     data = request.get_json()
-    email = data['email']
-    password = data['password']
+    email = data["email"]
+    password = data["password"]
     return login(email, password)
 
-@user_views.route('/logout', methods=['POST'])
+
+@user_views.route("/logout", methods=["POST"])
 @jwt_required()
 def logout_route():
     return logout()
 
-@user_views.route('/user', methods=['GET'])
+
+@user_views.route("/user", methods=["GET"])
 @jwt_required()
 def get_user_info_route():
     user_id = get_jwt_identity()
     return get_user_info(user_id)
 
-@user_views.route('/user', methods=['PUT'])
+
+@user_views.route("/user", methods=["PUT"])
 @jwt_required()
 def update_user_info_route():
     user_id = get_jwt_identity()
     data = request.get_json()
-    meross_password = data.get('meross_password')
-    power_eye_password = data.get('power_eye_password')
-    username = data.get('username')
+    meross_password = data.get("meross_password")
+    power_eye_password = data.get("power_eye_password")
+    username = data.get("username")
     return update_user_info(user_id, meross_password, power_eye_password, username)
 
-@user_views.route('/user', methods=['DELETE'])
+
+@user_views.route("/user", methods=["DELETE"])
 @jwt_required()
 def delete_user_route():
     user_id = get_jwt_identity()
     return delete_user(user_id)
 
-@user_views.route('/goal', methods=['GET'])
+
+@user_views.route("/goal", methods=["GET"])
 @jwt_required()
 def get_goal_route():
     user_id = get_jwt_identity()
     return get_goal(user_id)
 
-@user_views.route('/goal', methods=['POST'])
+
+@user_views.route("/goal", methods=["POST"])
 @jwt_required()
 def set_goal_route():
     user_id = get_jwt_identity()
     data = request.get_json()
-    energy = data['energy_goal']
-    return set_goal(user_id,energy)
+    energy = data["energy_goal"]
+    return set_goal(user_id, energy)
 
-@user_views.route('/goal', methods=['DELETE'])
+
+@user_views.route("/goal", methods=["DELETE"])
 @jwt_required()
 def delete_goal_route():
     user_id = get_jwt_identity()
     return delete_goal(user_id)
 
 
-@user_views.route('/profile_pic', methods=["POST"])
+@user_views.route("/profile_pic", methods=["POST"])
 @jwt_required()
 def upload_profile_pic_route():
     user_id = get_jwt_identity()
-    file = request.files['file']
-    return upload_profile_pic(user_id,file)
+    file = request.files["file"]
+    return upload_profile_pic(user_id, file)
 
-@user_views.route('/profile_pic/<filename>', methods=["GET"])
+
+@user_views.route("/profile_pic", methods=["GET"])
 @jwt_required()
-def get_profile_pic_route(filename):
+def get_profile_pic_route():
     user_id = get_jwt_identity()
-    return get_profile_pic(user_id,filename)
+    return get_profile_pic(user_id)
 
 
-@user_views.route('/FCM_token', methods=["POST"])
+@user_views.route("/FCM_token", methods=["POST"])
 @jwt_required()
 def set_FCM_token_route():
     user_id = get_jwt_identity()
     data = request.get_json()
-    device_id = data['device_id']
-    fcm_token = data['fcm_token']
+    device_id = data["device_id"]
+    fcm_token = data["fcm_token"]
     return set_FCM_token(user_id, device_id, fcm_token)
