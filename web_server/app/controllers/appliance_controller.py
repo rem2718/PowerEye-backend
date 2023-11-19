@@ -1,6 +1,7 @@
 # app\controllers\appliance_controller.py
 from flask import jsonify
-from app.models.appliance_model import Appliance,ApplianceType
+from app.models.appliance_model import Appliance
+from app.utils.enums import ApplianceType
 from app.utils.enums import EType
 from app.models.user_model import User
 from app.models.room_model import Room
@@ -158,7 +159,7 @@ def get_appliance_by_id(user_id, appliance_id):
         appliance_data = {
             'id': str(appliance._id),
             'name': appliance.name,
-            'type': appliance.type.value,
+            'type': ApplianceType(appliance['type']).value,
             'cloud_id': appliance.cloud_id,
             'energy': appliance.energy,
             'is_deleted': appliance.is_deleted,
@@ -189,7 +190,7 @@ def get_all_appliances(user_id):
                 appliance_data = {
                     'id': str(appliance._id),
                     'name': appliance.name,
-                    'type': appliance.type,
+                    'type': ApplianceType(appliance['type']).value,
                     # 'cloud_id': appliance.cloud_id,
                     'connection_status': appliance.connection_status,
                     'status': appliance.status,

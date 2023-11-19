@@ -5,6 +5,9 @@ from app.models.user_model import User
 from app.models.appliance_model import Appliance
 from mongoengine.errors import DoesNotExist
 import traceback
+from app.utils.enums import ApplianceType
+from bson import ObjectId
+
 
 # Helper function to validate room name
 def validate_room_name(user, name):
@@ -96,14 +99,15 @@ def get_room_appliances(user_id, room_id):
                 room_appliances.append({
                     'appliance_id':str(appliance_id),
                     'name': appliance['name'],
-                    'type': appliance['type'],
+                    'type': ApplianceType(appliance['type']).value,
                     'connection_status': appliance['connection_status'],
-                    'status': appliance['status'],
+                    'status': appliance['status']
                 })
                 
         return jsonify({'appliances': room_appliances}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 def switch_room(user_id, room_id, new_status):
@@ -185,12 +189,22 @@ def add_appliances_to_room(user_id, room_id, appliance_ids):
 
             valid_appliances.append(appliance)
 
-        # Add the valid appliance ids to the room if they are not already present
-        for appliance_id in appliance_ids:
-            if appliance_id not in room.appliances:
+        # Check if the appliances are already in the room
+            existing_appliances = set(room.appliances)
+            new_appliances = set(ObjectId(appliance_id) for appliance_id in appliance_ids)
+
+            # Identify which appliances are new and which are existing
+            new_appliances_set = new_appliances - existing_appliances
+            existing_appliances_set = new_appliances.intersection(existing_appliances)
+
+            # Add the valid appliance ids to the room if they are not already present
+            for appliance_id in new_appliances_set:
                 room.update(push__appliances=appliance_id)
 
-        return jsonify({'message': 'Appliances added to room successfully'}), 200
+            response_message = f'Appliances added to room successfully. Added: {len(new_appliances_set)}, Existing: {len(existing_appliances_set)}'
+
+            return jsonify({'message': response_message}), 200
+
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -221,10 +235,10 @@ def get_all_user_rooms(user_id):
             for appliance_id in room.appliances:
                 appliance = next((app for app in user.appliances if app['_id'] == appliance_id), None)
                 if not appliance:
-                    return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
+                    return jsonify({'error': f'Appliance with ID {str(appliance_id)} not found for the user'}), 404
 
                 if appliance['is_deleted']:
-                    return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
+                    return jsonify({'error': f'Appliance with ID {str(appliance_id)} is marked as deleted'}), 400
 
                 room_data['appliances'].append(str(appliance_id))
 
