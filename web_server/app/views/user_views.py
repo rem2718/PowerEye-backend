@@ -81,11 +81,11 @@ def upload_profile_pic_route():
     filename_with_extension = filename + '.' + extension
     return upload_profile_pic(user_id,file,filename_with_extension)
 
-@user_views.route('/profile_pic/<filename>', methods=["GET"])
+@user_views.route('/profile_pic', methods=["GET"])
 @jwt_required()
-def get_profile_pic_route(filename):
+def get_profile_pic_route():
     user_id = get_jwt_identity()
-    return get_profile_pic(user_id,filename)
+    return get_profile_pic(user_id)
 
 
 @user_views.route('/FCM_token', methods=["POST"])
