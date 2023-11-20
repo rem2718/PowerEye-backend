@@ -1,11 +1,9 @@
 # app\controllers\appliance_controller.py
 from flask import jsonify
-from app.models.appliance_model import Appliance,ApplianceType
+from app.models.appliance_model import Appliance
+from app.utils.enums import ApplianceType
 from app.utils.enums import EType
 from app.models.user_model import User
-from app.models.power_model import Power
-from app.controllers.room_controller import delete_appliance_from_room
-# from app.utils.cloud_interface import get_smartplugs, switch
 from app.models.room_model import Room
 from mongoengine.errors import DoesNotExist
 from bson import ObjectId
@@ -23,8 +21,8 @@ def map_appliance_type_to_e_type(appliance_type):
         ApplianceType.LIGHTING: EType.NONE,
         ApplianceType.HEATER: EType.NONE,
         ApplianceType.COOKER_MAKER: EType.NONE,
-        ApplianceType.MIXER: EType.NONE,
-        ApplianceType.CLOCK_ALEXA: EType.NONE,
+        ApplianceType.BLENDER: EType.NONE,
+        ApplianceType.ALEXA: EType.NONE,
         ApplianceType.HAIR_DRYER: EType.NONE,
         ApplianceType.CAMERA: EType.NONE,
         ApplianceType.WASHING_MACHINE: EType.SHIFTABLE,
@@ -37,8 +35,7 @@ def map_appliance_type_to_e_type(appliance_type):
         ApplianceType.PRINTER: EType.PHANTOM,
         ApplianceType.CHARGER: EType.PHANTOM,
         ApplianceType.RECEIVER: EType.PHANTOM,
-        ApplianceType.SEWING_MACHINE: EType.PHANTOM,
-        ApplianceType.SPORTS_MACHINE: EType.PHANTOM,
+        ApplianceType.SPORTS_MACHINE: EType.PHANTOM
     }
     return appliance_type_to_e_type.get(appliance_type)
 
@@ -162,7 +159,7 @@ def get_appliance_by_id(user_id, appliance_id):
         appliance_data = {
             'id': str(appliance._id),
             'name': appliance.name,
-            'type': appliance.type,
+            'type': ApplianceType(appliance['type']).value,
             'cloud_id': appliance.cloud_id,
             'energy': appliance.energy,
             'is_deleted': appliance.is_deleted,
@@ -193,7 +190,7 @@ def get_all_appliances(user_id):
                 appliance_data = {
                     'id': str(appliance._id),
                     'name': appliance.name,
-                    'type': appliance.type.value,
+                    'type': ApplianceType(appliance['type']).value,
                     # 'cloud_id': appliance.cloud_id,
                     'connection_status': appliance.connection_status,
                     'status': appliance.status,
@@ -332,9 +329,10 @@ def get_smartplugs(user_id):
             return error_message, status_code
         
         # Filter the smart plugs based on existing cloud IDs
-        filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
+        # filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
         
-        return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
+        # return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
+        return jsonify({'Smart Plugs': smart_plugs}), 200
 
     except Exception as e:
         traceback.print_exc()

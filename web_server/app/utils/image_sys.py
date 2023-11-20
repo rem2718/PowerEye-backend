@@ -36,3 +36,31 @@ def save_base64_image(file, filename):
     except Exception as e:
         print(str(e))
         return False
+
+# takes a file path as input and returns the base64-encoded content of the file (for get api)
+def file_to_base64(file_path):
+    try:
+        # open function is used to open the file specified by file_path in binary mode ('rb')
+        # with statement, ensures that the file is properly closed after reading its content.
+        with open(file_path, 'rb') as file:
+            # Read the file content & result is stored in the file_content variable
+            file_content = file.read()
+            # split the file path into the file's base name and extension.
+            _, file_extension = os.path.splitext(file_path)
+            # extension is extracted and stored in the file_extension variable
+            # remove the leading dot (.) using slicing (file_extension[1:])
+            file_extension = file_extension[1:]
+
+            # Encode the file content to base64
+            base64_encoded = base64.b64encode(file_content).decode('utf-8')
+
+            # returns the base64_encoded string representing the file content
+            prefix = f"data:image/{file_extension.lower()};base64,"
+            return prefix + base64_encoded
+        
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None

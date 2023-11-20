@@ -1,5 +1,5 @@
-#app\views\energy_views.py
-from flask import Flask, Blueprint, jsonify
+# app\views\energy_views.py
+from flask import Blueprint, jsonify, request
 from app.controllers.energy_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.enums import Timeframe

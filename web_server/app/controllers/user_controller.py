@@ -266,10 +266,10 @@ def get_profile_pic(user_id):
                 mimetype, _ = mimetypes.guess_type(file_path)
                 if mimetype:
                     # If mimetype is available, return the file with the specified mimetype
-                    return send_file(file_path, mimetype=mimetype), 200
+                    return jsonify({'image': file_to_base64(file_path)}), 200
                 else:
                     # If mimetype is not available, return the file without specifying a mimetype
-                    return send_file(file_path), 200
+                    return jsonify({'image': file_to_base64(file_path)}), 200
     except FileNotFoundError:
         return jsonify({'error': 'Profile picture not found'}), 404
     except Exception as e:
