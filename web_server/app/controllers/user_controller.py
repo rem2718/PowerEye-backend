@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 import mimetypes
 import os
 from mongoengine.errors import DoesNotExist
-
+import traceback
 
 # Function to validate PowerEye system password
 def validate_password(password):
@@ -35,6 +35,7 @@ def validate_password(password):
         return True, None, None
 
     except Exception as e:
+        traceback.print_exc()
         return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
     
 
@@ -75,7 +76,7 @@ def signup(email, power_eye_password, cloud_password):
 
         # Return the ID of the newly created user
         return jsonify({'message': 'User created successfully.', 'user_id': str(user.id)}), 201
-    
+
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -105,8 +106,10 @@ def login(email, password):
         token = user.generate_token()
         
         return jsonify({'token': token}), 200
-
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 def logout():
@@ -117,7 +120,6 @@ def get_user_info(user_id):
     try:
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)
-
         if not user:
             return jsonify({'message': 'User not found.'}), 404
         
@@ -130,11 +132,13 @@ def get_user_info(user_id):
         }
 
         return jsonify({'user_info': user_info}), 200
-
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-def update_user_info(user_id, meross_password=None, power_eye_password=None, username=None):
+def update_user_info(user_id, cloud_password=None, power_eye_password=None, username=None):
     try:
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)
@@ -143,12 +147,20 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
             return jsonify({'message': 'User not found.'}), 404
 
         # Update user information if provided
-        if meross_password is not None:
-            user.cloud_password = meross_password
+        if cloud_password is not None:
+            # Validate Meross credentials
+            cloud_user = {'email':user.email, 'password': cloud_password}  # Create user object
+            is_valid_meross, error_response,status_code=cloud.verify_credentials(PlugType.MEROSS,cloud_user)
+            if not is_valid_meross:
+                return error_response, status_code
+            user.cloud_password = cloud_password
 
         if power_eye_password is not None:
-            if not validate_password(power_eye_password):
-                return jsonify({'error': 'Invalid PowerEye system password.'}), 400
+            is_valid_pass, error_response, status_code = validate_password(power_eye_password)
+            if not is_valid_pass:
+                return error_response, status_code
+
+            print(is_valid_pass)
             hashed_password = bcrypt.generate_password_hash(power_eye_password).decode('utf-8')
             print(user.password)
             user.password = hashed_password
@@ -161,14 +173,15 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
         user.save()
 
         return jsonify({'message': 'User information updated successfully'}), 200
-
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
 
 
-from mongoengine.errors import DoesNotExist
 
 def delete_user(user_id):
     try:
@@ -203,6 +216,7 @@ def delete_user(user_id):
         return jsonify({'message': 'User not found.'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -210,25 +224,33 @@ def delete_user(user_id):
 
 
 def get_goal(user_id):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
-    if not user:
-        return jsonify({'message': 'User not found.'}), 404
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
+        
+        goal = user.energy_goal
+        return jsonify({'energy_goal': goal}), 200
     
-    goal = user.energy_goal
-    return jsonify({'energy_goal': goal}), 200
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 
 def set_goal(user_id, energy):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
-    if not user:
-        return jsonify({'message': 'User not found.'}), 404
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
 
     # Validate the energy input
-    try:
+    
         energy = float(energy)
         if energy < 0:
             return jsonify({'message': 'Energy goal must be a positive value.'}), 400
@@ -245,16 +267,27 @@ def set_goal(user_id, energy):
 
     except ValueError:
         return jsonify({'message': 'Energy goal must be a numeric value.'}), 400
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 def delete_goal(user_id):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
-    if not user:
+    try: 
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({'message': 'User not found.'}), 404
+        
+        user.energy_goal = None
+        user.save()
+        return jsonify({'message': 'Goal deleted successfully'}), 200
+    except DoesNotExist:
         return jsonify({'message': 'User not found.'}), 404
-    
-    user.energy_goal = None
-    user.save()
-    return jsonify({'message': 'Goal deleted successfully'}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 
 def upload_profile_pic(user_id,file):
@@ -334,6 +367,9 @@ def set_FCM_token(user_id, device_id, fcm_token):
 
         return jsonify({'message': 'FCM token set successfully'}), 200
 
+    
+    except DoesNotExist:
+        return jsonify({'message': 'User not found.'}), 404 
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while setting FCM token: {str(e)}'}), 500
