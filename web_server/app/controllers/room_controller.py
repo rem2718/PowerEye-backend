@@ -59,6 +59,8 @@ def create_room(user_id, name, appliance_ids):
 
             valid_appliances.append(appliance)
 
+
+
         # Create the room
         room = Room(name=name, appliances=appliance_ids, user_id=user_id)
         room.save()
@@ -200,7 +202,9 @@ def add_appliances_to_room(user_id, room_id, appliance_ids):
                 room.update(push__appliances=appliance_id)
 
             response_message = f'Appliances added to room successfully. Added: {len(new_appliances_set)}, Existing: {len(existing_appliances_set)}'
+
             return jsonify({'message': response_message}), 200
+
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

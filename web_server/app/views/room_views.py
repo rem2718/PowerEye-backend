@@ -2,8 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.controllers.room_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-
-# Create a Blueprint to organize your routes
+# Create a Blueprint to organize  routes
 room_views = Blueprint('room_views', __name__)
 
 # Define routes using the imported functions
@@ -37,7 +36,6 @@ def add_appliances_to_room_route(room_id):
     appliance_ids = request.json.get('appliance_ids', [])
 
     return add_appliances_to_room(user_id, room_id, appliance_ids)
-
 
 @room_views.route('/get_all_user_rooms', methods=['GET'])
 @jwt_required()
