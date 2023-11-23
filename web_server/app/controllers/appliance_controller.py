@@ -40,7 +40,7 @@ def map_appliance_type_to_e_type(appliance_type):
     return appliance_type_to_e_type.get(appliance_type)
 
 # Helper function to validate appliance name
-def validate_name(user, name):
+def validate_name(user, name, current_appliance_id=None):
     try:
         if not user:
             return False, jsonify({'message': 'User not found'}), 404
@@ -50,7 +50,12 @@ def validate_name(user, name):
             return False, jsonify({'message': 'Name should be a string with 2 or more characters'}), 400
 
         # Check if the name is unique among active appliances in the user's account
+        # Check if the name is unique among active appliances in the user's account
         for appliance in user.appliances:
+            # Exclude the current appliance being updated (if provided)
+            if current_appliance_id and str(appliance._id) == current_appliance_id:
+                continue
+
             if not appliance.is_deleted and appliance.name == name:
                 return False, jsonify({'message': 'Name must be unique among all active appliances in your account'}), 400
         
@@ -75,10 +80,10 @@ def validate_cloud_id(user, cloud_id):
         if not cloud_id or not isinstance(cloud_id, str):
             return False, jsonify({'message': 'Invalid cloud_id'}), 400
 
-        # # Validate if the provided cloud_id belongs to the user's smart plugs
-        # user_cloud_ids = get_smartplugs(user)
-        # if cloud_id not in user_cloud_ids:
-        #     return False, jsonify({'message': 'Invalid cloud_id'}), 400
+        # Validate if the provided cloud_id belongs to the user's smart plugs
+        user_cloud_ids = get_smartplugs(user)
+        if cloud_id not in user_cloud_ids:
+            return False, jsonify({'message': 'Invalid cloud_id'}), 400
 
         # Validate if the smart plug is not already in use
         for appliance in user.appliances:
@@ -170,7 +175,10 @@ def get_appliance_by_id(user_id, appliance_id):
         }
 
         return jsonify(appliance_data), 200
-
+    
+    except DoesNotExist:
+        return jsonify({'message': 'User not found'}), 404
+    
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while retrieving appliance: {str(e)}'}), 500
@@ -237,7 +245,8 @@ def delete_appliance(user_id, appliance_id):
             delete_appliance_from_room(user_id, str(room.id), appliance_id)
 
         return jsonify({'message': 'Appliance deleted successfully'}), 200
-
+    except DoesNotExist:
+            return jsonify({'message': 'User not found'}), 404
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while deleting appliance: {str(e)}'}), 500
@@ -257,7 +266,7 @@ def update_appliance_name(user_id, appliance_id, new_name):
 
 
         # Validate name
-        is_valid_name, error_response, status_code = validate_name(user,new_name)
+        is_valid_name, error_response, status_code = validate_name(user, new_name, current_appliance_id=appliance_id)
         if not is_valid_name:
             return error_response, status_code
 
@@ -266,7 +275,8 @@ def update_appliance_name(user_id, appliance_id, new_name):
         user.save()
 
         return jsonify({'message': f'Appliance name updated successfully to {new_name}.'}), 200
-
+    except DoesNotExist:
+        return jsonify({'message': 'User not found'}), 404
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while updating appliance: {str(e)}'}), 500
@@ -284,7 +294,10 @@ def switch_appliance(user_id, appliance_id, status):
         if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
 
-
+        # Validate cloud_id using the new function
+        is_valid_cloud_id, error_response, status_code = validate_cloud_id(user, appliance.cloud_id)
+        if not is_valid_cloud_id:
+            return error_response, status_code
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id
         
@@ -307,6 +320,8 @@ def switch_appliance(user_id, appliance_id, status):
         
         return jsonify({'message': 'Appliance status updated successfully'}), 200
 
+    except DoesNotExist:
+        return jsonify({'message': 'User not found'}), 404
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while switching appliance status: {str(e)}'}), 500
@@ -318,7 +333,8 @@ def get_smartplugs(user_id):
         if not user:
             return jsonify({'message': 'User not found.'}), 404
         # Get a list of all `cloud_id` values from the user's appliances
-        existing_cloud_ids = [app.cloud_id for app in user.appliances if app.cloud_id]
+        plugged_cloud_ids = [app.cloud_id for app in user.appliances if app.cloud_id and not app.is_deleted]
+
 
         
         cloud_user = {'id':user.id, 'email': user.email, 'password': user.cloud_password, 'dev1': 'bf16e0689159efb9c5xibt'}  # Create user object
@@ -329,11 +345,12 @@ def get_smartplugs(user_id):
             return error_message, status_code
         
         # Filter the smart plugs based on existing cloud IDs
-        # filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in existing_cloud_ids]
+        filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in plugged_cloud_ids]
         
-        # return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
-        return jsonify({'Smart Plugs': smart_plugs}), 200
+        return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
 
+    except DoesNotExist:
+        return jsonify({'message': 'User not found'}), 404
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while retrieving smart plugs: {str(e)}'}), 500
