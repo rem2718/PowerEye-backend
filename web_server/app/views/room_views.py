@@ -3,7 +3,7 @@ from app.controllers.room_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
-# Create a Blueprint to organize your routes
+# Create a Blueprint to organize  routes
 room_views = Blueprint('room_views', __name__)
 
 # Define routes using the imported functions

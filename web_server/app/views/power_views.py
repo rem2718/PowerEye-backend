@@ -3,7 +3,7 @@ from app.controllers.power_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
-# Create a Blueprint to organize your routes
+# Create a Blueprint to organize  routes
 power_views = Blueprint('power_views', __name__)
 
 # Define routes using the imported functions
