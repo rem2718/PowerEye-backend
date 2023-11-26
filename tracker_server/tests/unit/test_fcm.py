@@ -15,7 +15,7 @@ load_dotenv(os.path.join(".secrets", ".env"))
 def fcm_instance():
     CRED = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     mock_db = Mock()
-    token = "fhsfc6eZTqGbBA4roX_BTa:APA91bEATox4iW2TJ9XVkWoqG3j3JMkR0eJgLPxWZRkNnPinIxtBJL5pS5-Ho8Xr-BhE-0kI-tA_rIijSZCsZ83CrV2aC0QTNd-OJO981eKC5iQBZW8tPDk6BX7TX0uLm3xj5Y3f8KWM"
+    token = "ffxuhXsmQNyat_DXn5y_Ix:APA91bFDh9cJisILPz9HoUsXe53y04xwugYS8Ze8zBFko6U5oZLWKqhwfWXvIAX6JziHLyllXFECZuS0T7nk28S2djRsOyLBoCmFcU6iSN2D0l1_aQUhDxTpOWvTHjk6LISM994hfApq"
     mock_db.get_doc.return_value = {
         "notified_devices": [
             {"device_id": "dev1", "fcm_token": token},
@@ -49,7 +49,7 @@ def fcm_instance():
             {"percentage": 25},
             (
                 "Monthly Energy Goal",
-                "You're close to reaching 25% of your monthly energy goal.",
+                "You're close to reach 25% of your monthly energy goal.",
             ),
         ),
         (
@@ -83,7 +83,9 @@ def test_map_message(fcm_instance, type, data, output):
 
 
 def test_notify(fcm_instance):
-    responses = fcm_instance.notify("64d1638293d44252699aa21e", NotifType.PEAK, {"app_name": "tv"})
+    responses = fcm_instance.notify(
+        "64d1638293d44252699aa21e", NotifType.PEAK, {"app_name": "tv"}
+    )
     assert "powereye1-e599e" in responses[0]
     assert not responses[1]
 
