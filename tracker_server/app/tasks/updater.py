@@ -41,63 +41,54 @@ class Updater(Task):
         self.date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         self.logger = logging.getLogger(__name__)
 
-    def _yesterday_powers(self):
+    def _powers(self):
+        query = {"user": ObjectId(self.user_id)}
+        projection = {"user": 0, "_id": 0}
+        sort = [("timestamp", 1)]
+        data = self.db.get_docs("Powers", query, projection, sort)
+        if len(data):
+            powers = pd.DataFrame(data)
+            powers["timestamp"] = pd.to_datetime(powers["timestamp"])
+            powers["timestamp"] = powers["timestamp"].apply(
+                lambda x: x.replace(second=0, microsecond=0)
+            )
+            powers = powers.set_index("timestamp")
+            return powers
+        else:
+            return pd.Dataframe
+
+    def _yesterday_powers(self, powers):
         """
         Get power consumption data for the previous day.
+        Args:
+            powers (DataFrame): all power consumption data.
         Returns:
             DataFrame: Dataframe containing power consumption data.
         """
         previous_day = self.date - self.day
-        query = {
-            "user": ObjectId(self.user_id),
-            "timestamp": {
-                "$gte": previous_day.replace(hour=0, minute=0, second=0),
-                "$lt": previous_day.replace(hour=23, minute=59, second=59),
-            },
-        }
-        projection = {"user": 0, "_id": 0}
-        sort = [("timestamp", 1)]
-        powers = self.db.get_docs("Powers", query, projection, sort)
-        return pd.DataFrame(list(powers))
+        start = previous_day.replace(hour=0, minute=0, second=0)
+        end = previous_day.replace(hour=23, minute=59, second=59)
 
-    def _get_energys(self):
-        """
-        Get all energy historical data.
-        Returns:
-            DataFrame: Dataframe containing energy consumption data.
-        """
-        query = {"user": ObjectId(self.user_id)}
-        projection = {"date": 0, "user": 0, "_id": 0}
-        sort = [("date", 1)]
-        energys = self.db.get_docs("Energys", query, projection, sort)
-        return pd.DataFrame(list(energys))
+        yesterday_powers = powers[
+            (powers.index >= start) & (powers.index <= end)
+        ]
+        return yesterday_powers
 
-    def _generate_yesterday_energys(self, appliances, powers):
+    def _yesterday_energys(self, appliances):
         """
         Generate a dictionary of energy values for each appliance based on yesterday power data.
         Args:
             appliances (list): List of dictionaries representing appliances data.
-            powers (DataFrame): Pandas DataFrame containing historical power consumption data.
         Returns:
             dict: Appliance IDs mapped to corresponding energy values. If an appliance has excessive missing
             data, its energy value is set to negative.
         """
         energys = {}
-        powers["timestamp"] = powers["timestamp"].apply(
-            lambda x: x.replace(second=0, microsecond=0)
-        )
-        powers = powers.sort_values(by="timestamp")
-        powers = powers.set_index("timestamp")
-
         for app in appliances:
             if app["is_deleted"]:
                 continue
             app_id = str(app["_id"])
-            powers[app_id] = powers[app_id].ffill(limit=5)
-            daily_null_count = powers[app_id].isnull().sum()
             energys[app_id] = app["energy"]
-            if daily_null_count > self.day_threshold:
-                energys[app_id] = app["energy"] * -1
         return energys
 
     def _update_energy(self, energys, cur_energy, cur_date):
@@ -147,24 +138,25 @@ class Updater(Task):
                 self._dump_model("cluster", app_id, cluster)
                 self.logger.info(f"cluster_{app_id} is dumped successfully")
 
-    def _apply_forecast(self, app_id, energys):
+    def _apply_forecast(self, app_id, powers, day):
         """
-        Apply energy forecast to an appliance and update related information.
+        Find the best parameters for the forecasting model.
         Args:
             app_id (str): Appliance identifier.
-            energys (dict): Appliance IDs and their corresponding energy values.
+            powers (dict): Appliance IDs and their corresponding energy values.
         """
-        forcast, threshold = EPR.energy_forecast(app_id, energys[app_id])
-        if forcast:
-            self._dump_model("forecast", app_id, forcast)
-            self.db.update(
-                "Users",
-                self.user_id,
-                "appliances.$[elem].baseline_threshold",
-                threshold,
-                [{"elem._id": ObjectId(app_id)}],
-            )
-            self.logger.info(f"forecast_{app_id} is dumped successfully")
+        if day == 6:
+            params, threshold = EPR.best_params(powers)
+            if params != None:
+                self._dump_model("forecast", app_id, params)
+                self.db.update(
+                    "Users",
+                    self.user_id,
+                    "appliances.$[elem].baseline_threshold",
+                    threshold,
+                    [{"elem._id": ObjectId(app_id)}],
+                )
+                self.logger.info(f"forecast_{app_id} is dumped successfully")
 
     def run(self):
         """
@@ -174,23 +166,20 @@ class Updater(Task):
         user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projection)
         appliances = user["appliances"]
 
-        powers = self._yesterday_powers()
-        energys = self._get_energys()
-        yesterday_energys = self._generate_yesterday_energys(appliances, powers.copy())
+        powers = self._powers()
+        yesterday_powers = self._yesterday_powers(powers)
+        yesterday_energys = self._yesterday_energys(appliances)
 
         self._update_energy(
             yesterday_energys, user["current_month_energy"], datetime.now()
         )
         yesterday_energys["user"] = ObjectId(self.user_id)
         yesterday_energys["date"] = self.date
-        energys = pd.concat(
-            [energys, pd.DataFrame([yesterday_energys])], ignore_index=True
-        )
 
         for app in appliances:
             app_id = str(app["_id"])
-            self._apply_cluster(app_id, app["e_type"], powers)
-            self._apply_forecast(app_id, energys)
+            self._apply_cluster(app_id, app["e_type"], yesterday_powers[app_id])
+            self._apply_forecast(app_id, powers[app_id], datetime.now().weekday())
 
         self.db.insert_doc("Energys", yesterday_energys)
         self.date += self.day

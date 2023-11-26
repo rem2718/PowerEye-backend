@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import pickle
 
+import pandas as pd
+
 from app.recommender import Recommender as EPR
 from app.types_classes import NotifType, EType
 from app.interfaces.task import Task
@@ -61,14 +63,14 @@ class Checker(Task):
                 "e_type": app["e_type"],
                 "energy": app["energy"],
                 "status": app["status"],
-                "threshold": app["baseline_threshold"],
+                "baseline_threshold": app["baseline_threshold"],
             }
             for app in appliances
             if not app["is_deleted"]
         }
         return apps
 
-    def _get_powers(self, apps):
+    def _get_recent_powers(self, apps):
         """
         Get recent power consumption data for shiftable appliances.
         Args:
@@ -93,6 +95,35 @@ class Checker(Task):
         else:
             return {}
 
+    def _get_powers(self):
+        """
+        Get recent power consumption data for shiftable appliances.
+        Returns:
+            DataFrame: A DataFrame for appliances' power consumption data.
+        """
+        query = {
+            "user": ObjectId(self.user_id),
+            "timestamp.hour": {"$lt": datetime.now().hour},
+        }
+        projection = {"_id": 0, "user": 0}
+        sort = [("timestamp", 1)]
+        data = self.db.get_docs(
+            "Powers",
+            query,
+            projection=projection,
+            sort=sort,
+        )
+        if len(data):
+            powers = pd.DataFrame(data)
+            powers["timestamp"] = pd.to_datetime(powers["timestamp"])
+            powers["timestamp"] = powers["timestamp"].apply(
+                lambda x: x.replace(second=0, microsecond=0)
+            )
+            powers = powers.set_index("timestamp")
+            return powers
+        else:
+            return pd.DataFrame()
+
     def _reset_flags(self, cur_time):
         """
         Reset notification flags at the start of the day.
@@ -116,18 +147,17 @@ class Checker(Task):
         """
         return datetime.now() - self.phantom_flags[app_id][1] > self.hour
 
-    def _get_model(self, app_id):
+    def _get_model(self, app_id, type):
         """
          Retrieve a machine learning model associated with a specific app.
         Args:
             app_id (str): Appliance identifier.
+            type (str): Model type.
         Returns:
             object or bool: The machine learning model if found, or False if an error occurs.
         """
         try:
-            file_path = (
-                f"./models_filesystem/cluster_models/{self.user_id}/{app_id}.pkl"
-            )
+            file_path = f"./models_filesystem/{type}_models/{self.user_id}/{app_id}.pkl"
             file = open(file_path, "rb")
             model = pickle.load(file)
             file.close()
@@ -184,28 +214,33 @@ class Checker(Task):
         if not self.phantom_flags[app_id][0] and self._is_hour_elapsed(app_id):
             self.phantom_flags[app_id][0] = True
         if self.phantom_flags[app_id][0]:
-            model = self._get_model(app_id)
+            model = self._get_model(app_id, "cluster")
             if model and EPR.check_phantom(model, power, status):
                 self.fcm.notify(self.user_id, NotifType.PHANTOM, {"app_name": name})
                 self.phantom_flags[app_id][0] = False
                 self.phantom_flags[app_id][1] = datetime.now()
 
-    def _notify_baseline(self, app_id, app):
+    def _notify_baseline(self, app_id, app, cur_min):
         """
         Notify the user of baseline threshold condition.
         Args:
+            cur_min: The current minute.
             id: Appliance identifier.
             app: Appliance data.
         """
-        energy = app["energy"]
-        baseline = app["threshold"]
-        name = app["name"]
-        if app_id not in self.baseline_flags:
-            self.baseline_flags[app_id] = True
-        if baseline > 0 and self.baseline_flags[app_id]:
-            if EPR.check_baseline(energy, baseline):
-                self.fcm.notify(self.user_id, NotifType.BASELINE, {"app_name": name})
-                self.baseline_flags[app_id] = False
+        if cur_min == 0:
+            baseline = app["baseline_threshold"]
+            name = app["name"]
+            if app_id not in self.baseline_flags:
+                self.baseline_flags[app_id] = True
+            if baseline > 0 and self.baseline_flags[app_id]:
+                powers = self._get_powers()
+                params = self._get_model(app_id, "forecast")
+                if EPR.check_baseline(baseline, powers[app_id], params):
+                    self.fcm.notify(
+                        self.user_id, NotifType.BASELINE, {"app_name": name}
+                    )
+                    self.baseline_flags[app_id] = False
 
     def run(self):
         """
@@ -218,13 +253,13 @@ class Checker(Task):
 
         if len(appliances):
             apps = self._get_apps(appliances)
-            powers = self._get_powers(apps)
+            powers = self._get_recent_powers(apps)
             cur_energy = 0
             for id, app in apps.items():
                 cur_energy += app["energy"]
                 self._notify_peak(id, app)
-                self._notify_baseline(id, app)
+                self._notify_baseline(id, app, datetime.now().minute)
                 if id in powers:
-                    self._notify_phantom(id, apps[id], powers[id])
+                    self._notify_phantom(id, app, powers[id])
 
             self._notify_goal(user, cur_energy)
