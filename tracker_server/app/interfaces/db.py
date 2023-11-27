@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 
+
 class DB(ABC):
     """
     Abstract base class for database interaction.
     """
-    
+
     @abstractmethod
-    def __init__(self, URL:str, database:str):
+    def __init__(self, URL: str, database: str):
         """
         Constructor for the database interface.
         Args:
@@ -16,30 +17,32 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def get_doc(self, collection:str, query:dict={}, projection:dict={}, sort:list=[]):
+    def get_doc(
+        self, collection: str, query: dict = {}, projection: dict = {}, sort: list = []
+    ):
         """
         Get a single document from a collection.
         Args:
             collection (str): The name of the collection.
-            query (dict, optional): The query criteria for document retrieval. 
-            projection (dict, optional): The fields to include or exclude in the retrieved document. 
-            sort (list, optional): The sorting criteria for the retrieved document. 
+            query (dict, optional): The query criteria for document retrieval.
+            projection (dict, optional): The fields to include or exclude in the retrieved document.
+            sort (list, optional): The sorting criteria for the retrieved document.
         """
         pass
-    
-    @abstractmethod 
-    def get_docs(self, collection:str, query:dict={}, projection:dict={}):
+
+    @abstractmethod
+    def get_docs(self, collection: str, query: dict = {}, projection: dict = {}):
         """
         Get multiple documents from a collection.
         Args:
             collection (str): The name of the collection.
-            query (dict, optional): The query criteria for document retrieval. 
+            query (dict, optional): The query criteria for document retrieval.
             projection (dict, optional): The fields to include or exclude in the retrieved documents.
         """
         pass
 
     @abstractmethod
-    def insert_doc(self, collection:str ,doc:dict):
+    def insert_doc(self, collection: str, doc: dict):
         """
         Insert a single document into a collection.
         Args:
@@ -47,9 +50,9 @@ class DB(ABC):
             doc (dict): The document to be inserted.
         """
         pass
-    
-    @abstractmethod      
-    def insert_docs(self, collection:str ,docs:dict):
+
+    @abstractmethod
+    def insert_docs(self, collection: str, docs: dict):
         """
         Insert multiple documents into a collection.
         Args:
@@ -57,9 +60,9 @@ class DB(ABC):
             docs (dict): The documents to be inserted as a dictionary.
         """
         pass
-     
+
     @abstractmethod
-    def update_appliances(self, collection:str, id:str, updates:tuple):
+    def update_appliances(self, collection: str, id: str, updates: tuple):
         """
         Update appliances data in a document.
         Args:
@@ -70,7 +73,9 @@ class DB(ABC):
         pass
 
     @abstractmethod
-    def update(self, collection:str, id:str, field:str, value, array_filters:list=None):
+    def update(
+        self, collection: str, id: str, field: str, value, array_filters: list = None
+    ):
         """
         Update a specific field in a document.
         Args:
@@ -81,9 +86,3 @@ class DB(ABC):
             array_filters (list, optional): A list specifying the filter conditions for array updates. Defaults to None.
         """
         pass
-
-
-       
-
-
-    

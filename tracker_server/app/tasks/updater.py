@@ -56,22 +56,7 @@ class Updater(Task):
             powers = powers.set_index("timestamp")
             return powers
         else:
-            return pd.Dataframe
-
-    def _yesterday_powers(self, powers):
-        """
-        Get power consumption data for the previous day.
-        Args:
-            powers (DataFrame): all power consumption data.
-        Returns:
-            DataFrame: Dataframe containing power consumption data.
-        """
-        previous_day = self.date - self.day
-        start = previous_day.replace(hour=0, minute=0, second=0)
-        end = previous_day.replace(hour=23, minute=59, second=59)
-
-        yesterday_powers = powers[(powers.index >= start) & (powers.index <= end)]
-        return yesterday_powers
+            return pd.DataFrame()
 
     def _yesterday_energys(self, appliances):
         """
@@ -136,25 +121,24 @@ class Updater(Task):
                 self._dump_model("cluster", app_id, cluster)
                 self.logger.info(f"cluster_{app_id} is dumped successfully")
 
-    def _apply_forecast(self, app_id, powers, day):
+    def _apply_forecast(self, app_id, powers):
         """
         Find the best parameters for the forecasting model.
         Args:
             app_id (str): Appliance identifier.
             powers (dict): Appliance IDs and their corresponding energy values.
         """
-        if day == 6:
-            params, threshold = EPR.best_params(powers)
-            if params != None:
-                self._dump_model("forecast", app_id, params)
-                self.db.update(
-                    "Users",
-                    self.user_id,
-                    "appliances.$[elem].baseline_threshold",
-                    threshold,
-                    [{"elem._id": ObjectId(app_id)}],
-                )
-                self.logger.info(f"forecast_{app_id} is dumped successfully")
+        params, threshold = EPR.best_params(powers)
+        if params != None:
+            self._dump_model("forecast", app_id, params)
+            self.db.update(
+                "Users",
+                self.user_id,
+                "appliances.$[elem].baseline_threshold",
+                threshold,
+                [{"elem._id": ObjectId(app_id)}],
+            )
+            self.logger.info(f"forecast_{app_id} is dumped successfully")
 
     def run(self):
         """
@@ -163,21 +147,23 @@ class Updater(Task):
         projection = {"current_month_energy": 1, "appliances": 1}
         user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projection)
         appliances = user["appliances"]
-
+        appliances = [app for app in appliances if not app['is_deleted']]
+        # day = datetime.now().weekday()
+        # if day == 6:
         powers = self._powers()
-        yesterday_powers = self._yesterday_powers(powers)
-        yesterday_energys = self._yesterday_energys(appliances)
+        # yesterday_energys = self._yesterday_energys(appliances)
 
-        self._update_energy(
-            yesterday_energys, user["current_month_energy"], datetime.now()
-        )
-        yesterday_energys["user"] = ObjectId(self.user_id)
-        yesterday_energys["date"] = self.date
+        # self._update_energy(
+        #     yesterday_energys, user["current_month_energy"], datetime.now()
+        # )
+        # yesterday_energys["user"] = ObjectId(self.user_id)
+        # yesterday_energys["date"] = self.date
 
         for app in appliances:
             app_id = str(app["_id"])
-            self._apply_cluster(app_id, app["e_type"], yesterday_powers[app_id])
-            self._apply_forecast(app_id, powers[app_id], datetime.now().weekday())
+            # if day == 6:
+            self._apply_cluster(app_id, app["e_type"], powers[app_id])
+            self._apply_forecast(app_id, powers[app_id])
 
-        self.db.insert_doc("Energys", yesterday_energys)
-        self.date += self.day
+        # self.db.insert_doc("Energys", yesterday_energys)
+        # self.date += self.day

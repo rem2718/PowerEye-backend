@@ -4,14 +4,6 @@ import logging
 import asyncio
 import os
 
-# Define the log file path with the current timestamp
-log_file = f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
-# Configure the logging module
-logging.basicConfig(
-    filename=log_file,
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor
 from dotenv import load_dotenv
@@ -19,6 +11,20 @@ from dotenv import load_dotenv
 from app.external_dependencies.mongo import Mongo
 from app.external_dependencies.fcm import FCM
 from app.tasks.master import Master
+
+# Define the log file path with the current timestamp
+log_file = f'logs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+# Configure the logging module
+format_style = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(
+    filename=log_file,
+    level=logging.INFO,
+    format=format_style,
+)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter(format_style))
+logging.getLogger("").addHandler(console_handler)
 
 
 class Scheduler:

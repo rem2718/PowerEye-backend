@@ -36,7 +36,7 @@ def updater_instance(mocked_db):
     return updater
 
 
-def test_get_powers(updater_instance, mocked_db):
+def test_powers(updater_instance, mocked_db):
     powers = [
         {
             "5f5b940f60a37c2b4012b973": 100,
@@ -67,45 +67,6 @@ def test_get_powers(updater_instance, mocked_db):
     expected_res["timestamp"] = pd.to_datetime(expected_res["timestamp"])
     expected_res = expected_res.set_index("timestamp")
     assert res.equals(expected_res)
-
-
-def test_yesterday_powers(updater_instance):
-    docs = [
-        {
-            "5f5b940f60a37c2b4012b973": 1,
-            "5f5b940f60a37c2b4012b974": 0.1,
-            "5f5b940f60a37c2b4012b975": 4,
-            "timestamp": datetime(2023, 1, 1, 1, 1),
-        },
-        {
-            "5f5b940f60a37c2b4012b973": 1,
-            "5f5b940f60a37c2b4012b974": 8,
-            "5f5b940f60a37c2b4012b975": 0.45,
-            "timestamp": datetime.now() + timedelta(hours=1),
-        },
-        {
-            "5f5b940f60a37c2b4012b973": 6,
-            "5f5b940f60a37c2b4012b974": 0.3,
-            "5f5b940f60a37c2b4012b975": 0.4,
-            "timestamp": datetime.now() - timedelta(hours=23),
-        },
-        {
-            "5f5b940f60a37c2b4012b973": 6,
-            "5f5b940f60a37c2b4012b974": 0.1,
-            "5f5b940f60a37c2b4012b975": 0.4,
-            "timestamp": datetime.now() - timedelta(hours=22),
-        },
-    ]
-    powers = pd.DataFrame(docs)
-    powers["timestamp"] = pd.to_datetime(powers["timestamp"])
-    powers["timestamp"] = powers["timestamp"].apply(
-        lambda x: x.replace(second=0, microsecond=0)
-    )
-    powers = powers.set_index("timestamp")
-
-    res = updater_instance._yesterday_powers(powers)
-    output = powers.iloc[2:]
-    assert_frame_equal(res, output)
 
 
 def test_yesterday_energys(updater_instance):
@@ -202,7 +163,7 @@ def test_apply_forecast(updater_instance, monkeypatch):
         MagicMock(return_value=(params, threshold)),
     )
 
-    updater_instance._apply_forecast(app_id, powers, 6)
+    updater_instance._apply_forecast(app_id, powers)
 
     updater_instance.db.update.assert_called_with(
         "Users",
@@ -215,7 +176,7 @@ def test_apply_forecast(updater_instance, monkeypatch):
 
 
 def test_run(updater_instance):
-    updater_instance._yesterday_powers = MagicMock(return_value=pd.DataFrame())
+    updater_instance._powers = MagicMock(return_value=pd.DataFrame())
     updater_instance._yesterday_energys = MagicMock(return_value={})
     updater_instance._apply_cluster = MagicMock()
     updater_instance._apply_forecast = MagicMock()
@@ -223,17 +184,19 @@ def test_run(updater_instance):
 
     updater_instance.run()
 
-    updater_instance._yesterday_powers.assert_called_once()
     updater_instance._yesterday_energys.assert_called_once()
     expected_energys = updater_instance._yesterday_energys.return_value
     appliances = updater_instance.db.get_doc.return_value["appliances"]
     for app in appliances:
         app_id = str(app["_id"])
-        updater_instance._apply_cluster.assert_any_call(
-            app_id, app["e_type"], updater_instance._yesterday_powers.return_value
-        )
-        updater_instance._apply_forecast.assert_any_call(app_id, expected_energys)
+        if datetime.now().weekday() == 6:
+            updater_instance._apply_cluster.assert_any_call(
+                app_id, app["e_type"], updater_instance._powers.return_value
+            )
+            updater_instance._apply_forecast.assert_any_call(app_id, expected_energys)
 
+    if datetime.now().weekday() == 6:
+        updater_instance._powers.assert_called_once()
     expected_yesterday_energys = updater_instance._yesterday_energys.return_value
     expected_yesterday_energys["user"] = ObjectId(updater_instance.user_id)
     expected_yesterday_energys["date"] = updater_instance.date
