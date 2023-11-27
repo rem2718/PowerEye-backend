@@ -43,15 +43,18 @@ def test_checker(checker_instance, db_instance):
 
         if app_id in powers and app["e_type"] == EType.PHANTOM.value:
             assert app_id in checker_instance.phantom_flags
-            model = checker_instance._get_model(app_id)
+            model = checker_instance._get_model(app_id, "cluster")
             if EPR.check_phantom(model, powers[app_id], app["status"]):
                 assert not checker_instance.phantom_flags[app_id][0]
             else:
                 assert checker_instance.phantom_flags[app_id][0]
 
         assert app_id in checker_instance.baseline_flags
-        if app["baseline_threshold"] > 0 and EPR.check_baseline(
-            app["energy"], app["baseline_threshold"]
+        cur_min = datetime.now().minute
+        if (
+            app["baseline_threshold"] > 0
+            and cur_min == 0
+            and EPR.check_baseline(app_id, app, cur_min)
         ):
             assert not checker_instance.baseline_flags[app_id]
         else:
@@ -60,6 +63,7 @@ def test_checker(checker_instance, db_instance):
     percentage = EPR.check_goal(cur_energy, user["energy_goal"])
     if percentage:
         assert not checker_instance.goal_flags[percentage]
+
 
 def test_fcm_cleanup(fcm_instance):
     app = firebase_admin.get_app()

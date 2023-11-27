@@ -46,6 +46,7 @@ class Updater(Task):
         projection = {"user": 0, "_id": 0}
         sort = [("timestamp", 1)]
         data = self.db.get_docs("Powers", query, projection, sort)
+        data = list(data)
         if len(data):
             powers = pd.DataFrame(data)
             powers["timestamp"] = pd.to_datetime(powers["timestamp"])
@@ -69,9 +70,7 @@ class Updater(Task):
         start = previous_day.replace(hour=0, minute=0, second=0)
         end = previous_day.replace(hour=23, minute=59, second=59)
 
-        yesterday_powers = powers[
-            (powers.index >= start) & (powers.index <= end)
-        ]
+        yesterday_powers = powers[(powers.index >= start) & (powers.index <= end)]
         return yesterday_powers
 
     def _yesterday_energys(self, appliances):
@@ -99,7 +98,7 @@ class Updater(Task):
             cur_energy (float): The current energy consumption for the month.
             cur_date (datetime): The current date.
         """
-        yesterday_energy = sum(abs(value) for value in energys.values())
+        yesterday_energy = sum(value for value in energys.values())
         month_energy = yesterday_energy + cur_energy
         self.db.update("Users", self.user_id, "appliances.$[].energy", 0)
         if cur_date.day == 1:
@@ -132,8 +131,7 @@ class Updater(Task):
             powers (dict): Appliance IDs maps to power consumption data.
         """
         if e_type == EType.PHANTOM.value:
-            power = powers[app_id]
-            cluster = EPR.cluster(power)
+            cluster = EPR.cluster(powers)
             if cluster:
                 self._dump_model("cluster", app_id, cluster)
                 self.logger.info(f"cluster_{app_id} is dumped successfully")

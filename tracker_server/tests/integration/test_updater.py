@@ -1,3 +1,4 @@
+from datetime import datetime
 from bson import ObjectId
 
 import pytest
@@ -15,8 +16,9 @@ def updater_instance(db_instance):
 def test_updater(updater_instance, db_instance):
     user = db_instance.get_doc("Users", {"_id": ObjectId("64d154d494895e0b4c1bc081")})
     appliances = user["appliances"]
-    powers = updater_instance._yesterday_powers()
-    if powers.shape[0] == 0:
+    powers = updater_instance._powers()
+    yesterday_powers = updater_instance._yesterday_powers(powers)
+    if yesterday_powers.shape[0] == 0:
         previous_day = updater_instance.date - updater_instance.day
         query = {
             "user": ObjectId("64d154d494895e0b4c1bc081"),
@@ -27,10 +29,11 @@ def test_updater(updater_instance, db_instance):
         }
         powers = db_instance.client["hemsproject"]["Powers"].find(query)
         db_instance.insert_docs("Powers", powers)
-        powers = updater_instance._yesterday_powers()
-    energys = updater_instance._generate_yesterday_energys(appliances, powers.copy())
+        powers = updater_instance._powers()
+        yesterday_powers = updater_instance._yesterday_powers(powers)
+    yesterday_energys = updater_instance._yesterday_energys(appliances)
     new_energy = (
-        sum(abs(value) for value in energys.values()) + user["current_month_energy"]
+        sum(value for value in yesterday_energys.values()) + user["current_month_energy"]
     )
     
     updater_instance.run()
@@ -42,6 +45,9 @@ def test_updater(updater_instance, db_instance):
     )
     user = db_instance.get_doc("Users", {"_id": ObjectId("64d154d494895e0b4c1bc081")})
     appliances = user["appliances"]
-    assert all(doc[app_id] == energys[app_id] for app_id in energys.keys())
+    assert all(doc[app_id] == yesterday_energys[app_id] for app_id in yesterday_energys.keys())
     assert all(app["energy"] == 0 for app in appliances)
-    assert user["current_month_energy"] == new_energy
+    if datetime.now().day == 1:
+        assert user["current_month_energy"] == 0
+    else:    
+        assert user["current_month_energy"] == new_energy

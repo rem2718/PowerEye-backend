@@ -143,7 +143,7 @@ def test_cluster(appliance, size, output):
 
 def test_fill_na(appliance):
     app = EPR._fill_na(appliance)
-    assert app.index.freq == "H"
+    assert not app.isnull().sum()
 
 
 def test_normalize(appliance):

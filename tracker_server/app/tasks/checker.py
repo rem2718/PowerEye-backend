@@ -228,19 +228,16 @@ class Checker(Task):
             id: Appliance identifier.
             app: Appliance data.
         """
-        if cur_min == 0:
-            baseline = app["baseline_threshold"]
-            name = app["name"]
-            if app_id not in self.baseline_flags:
-                self.baseline_flags[app_id] = True
-            if baseline > 0 and self.baseline_flags[app_id]:
-                powers = self._get_powers()
-                params = self._get_model(app_id, "forecast")
-                if EPR.check_baseline(baseline, powers[app_id], params):
-                    self.fcm.notify(
-                        self.user_id, NotifType.BASELINE, {"app_name": name}
-                    )
-                    self.baseline_flags[app_id] = False
+        baseline = app["baseline_threshold"]
+        name = app["name"]
+        if app_id not in self.baseline_flags:
+            self.baseline_flags[app_id] = True
+        if cur_min == 0 and baseline > 0 and self.baseline_flags[app_id]:
+            powers = self._get_powers()
+            params = self._get_model(app_id, "forecast")
+            if EPR.check_baseline(baseline, powers[app_id], params):
+                self.fcm.notify(self.user_id, NotifType.BASELINE, {"app_name": name})
+                self.baseline_flags[app_id] = False
 
     def run(self):
         """

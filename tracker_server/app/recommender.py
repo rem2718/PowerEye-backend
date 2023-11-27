@@ -155,6 +155,7 @@ class Recommender:
             if count > Recommender.HOUR_THRESHOLD:
                 app.loc[hour] = None
         app = app.ffill(limit=3)
+        app = app.dropna()
         return app
 
     @staticmethod
@@ -225,7 +226,6 @@ class Recommender:
             return None, None
         app = Recommender._normalize(app)
         app = pd.DataFrame(app)
-        app = app.dropna()
         app = app.reset_index()
         app.columns = ["timestamp", "energy"]
         app = Recommender._feature_engineering(app)

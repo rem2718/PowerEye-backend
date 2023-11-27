@@ -149,7 +149,7 @@ def test_update_energy(updater_instance, date):
     energys = {
         "5f5b940f60a37c2b4012b973": 1,
         "5f5b940f60a37c2b4012b974": 0.1,
-        "5f5b940f60a37c2b4012b975": -4.5,
+        "5f5b940f60a37c2b4012b975": 4.5,
     }
     updater_instance._update_energy(energys, 0, date)
     if date.day == 1:
@@ -179,13 +179,13 @@ def test_apply_cluster(updater_instance, monkeypatch):
     app_id = "5f5b940f60a37c2b4012b973"
     e_type = 3
     powers = {app_id: [1.0, 2.0, 3.0, 4.0, 5.0]}
-
+    powers[app_id]
     updater_instance._dump_model = MagicMock()
     monkeypatch.setattr(EPR, "cluster", MagicMock(return_value="mocked_cluster"))
 
     updater_instance._apply_cluster(app_id, e_type, powers)
 
-    EPR.cluster.assert_called_once_with(powers[app_id])
+    EPR.cluster.assert_called_once_with(powers)
     updater_instance._dump_model.assert_called_once_with(
         "cluster", app_id, "mocked_cluster"
     )
