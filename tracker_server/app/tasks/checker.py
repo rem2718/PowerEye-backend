@@ -113,6 +113,7 @@ class Checker(Task):
             projection=projection,
             sort=sort,
         )
+        data = list(data)
         if len(data):
             powers = pd.DataFrame(data)
             powers["timestamp"] = pd.to_datetime(powers["timestamp"])

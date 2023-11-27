@@ -148,22 +148,21 @@ class Updater(Task):
         user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projection)
         appliances = user["appliances"]
         appliances = [app for app in appliances if not app['is_deleted']]
-        # day = datetime.now().weekday()
-        # if day == 6:
-        powers = self._powers()
-        # yesterday_energys = self._yesterday_energys(appliances)
+        
+        yesterday_energys = self._yesterday_energys(appliances)
+        self._update_energy(
+            yesterday_energys, user["current_month_energy"], datetime.now()
+        )
+        yesterday_energys["user"] = ObjectId(self.user_id)
+        yesterday_energys["date"] = self.date
+        
+        day = datetime.now().weekday()
+        if day == 6:
+            powers = self._powers()
+            for app in appliances:
+                app_id = str(app["_id"])
+                self._apply_cluster(app_id, app["e_type"], powers[app_id])
+                self._apply_forecast(app_id, powers[app_id])
 
-        # self._update_energy(
-        #     yesterday_energys, user["current_month_energy"], datetime.now()
-        # )
-        # yesterday_energys["user"] = ObjectId(self.user_id)
-        # yesterday_energys["date"] = self.date
-
-        for app in appliances:
-            app_id = str(app["_id"])
-            # if day == 6:
-            self._apply_cluster(app_id, app["e_type"], powers[app_id])
-            self._apply_forecast(app_id, powers[app_id])
-
-        # self.db.insert_doc("Energys", yesterday_energys)
-        # self.date += self.day
+        self.db.insert_doc("Energys", yesterday_energys)
+        self.date += self.day
