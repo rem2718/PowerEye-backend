@@ -235,7 +235,7 @@ class Checker(Task):
         if cur_min == 0 and baseline > 0 and self.baseline_flags[app_id]:
             powers = self._get_powers()
             params = self._get_model(app_id, "forecast")
-            if EPR.check_baseline(baseline, powers[app_id], params):
+            if params and EPR.check_baseline(baseline, powers[app_id], params):
                 self.fcm.notify(self.user_id, NotifType.BASELINE, {"app_name": name})
                 self.baseline_flags[app_id] = False
 
