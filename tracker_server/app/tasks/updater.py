@@ -156,6 +156,7 @@ class Updater(Task):
         yesterday_energys["user"] = ObjectId(self.user_id)
         yesterday_energys["date"] = self.date
         self.db.insert_doc("Energys", yesterday_energys)
+        self.logger.critical(f"energy: {self.date} -> done")
         self.date += self.day
         
         day = datetime.now().weekday()

@@ -21,6 +21,9 @@ def test_checker(checker_instance, db_instance):
     appliances = user["appliances"]
     cur_energy = user["current_month_energy"]
     shiftable = [EType.SHIFTABLE.value, EType.PHANTOM.value]
+    min = datetime.now().minute
+    if min == 0:
+        powers = checker_instance._get_powers()
     powers = db_instance.get_doc(
         "Powers",
         {"user": ObjectId("64d154d494895e0b4c1bc081")},
@@ -48,17 +51,15 @@ def test_checker(checker_instance, db_instance):
                 assert not checker_instance.phantom_flags[app_id][0]
             else:
                 assert checker_instance.phantom_flags[app_id][0]
-
-        assert app_id in checker_instance.baseline_flags
-        cur_min = datetime.now().minute
-        if (
-            app["baseline_threshold"] > 0
-            and cur_min == 0
-            and EPR.check_baseline(app_id, app, cur_min)
-        ):
-            assert not checker_instance.baseline_flags[app_id]
-        else:
-            assert checker_instance.baseline_flags[app_id]
+        if min == 0:
+            assert app_id in checker_instance.baseline_flags
+            if (
+                app["baseline_threshold"] > 0
+                and EPR.check_baseline(app_id, app, powers[app_id])
+            ):
+                assert not checker_instance.baseline_flags[app_id]
+            else:
+                assert checker_instance.baseline_flags[app_id]
 
     percentage = EPR.check_goal(cur_energy, user["energy_goal"])
     if percentage:

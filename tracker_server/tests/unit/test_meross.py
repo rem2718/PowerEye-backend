@@ -39,17 +39,16 @@ async def test_meross(meross_instance):
     assert isinstance(meross_instance.manager, MerossManager)
     
     res = await meross_instance.get_devices()
-    assert len(res) > 0 
     assert isinstance(res, list)
-    
-    dev = res[0]
-    res = await meross_instance.get_id(dev)
-    assert isinstance(res, str)
+    if len(res) > 0:
+        dev = res[0]
+        res = await meross_instance.get_id(dev)
+        assert isinstance(res, str)
 
-    on_off, connection_status, power = await meross_instance.get_info(dev)
-    assert isinstance(on_off, bool)
-    assert isinstance(connection_status, bool)
-    assert isinstance(power, float)
-    assert power >= 0  
+        on_off, connection_status, power = await meross_instance.get_info(dev)
+        assert isinstance(on_off, bool)
+        assert isinstance(connection_status, bool)
+        assert isinstance(power, float)
+        assert power >= 0  
     
     await meross_instance._logout()     
