@@ -1,4 +1,6 @@
 from enum import Enum
+
+
 class PlugType(Enum):
     """
     Enumeration representing types (brands) of smart plugs' clouds.
@@ -6,9 +8,11 @@ class PlugType(Enum):
         MEROSS (int): Meross Cloud (main).
         TUYA (int): Tuya Cloud (additional).
     """
+
     MEROSS = 1
     TUYA = 2
-    
+
+
 class EType(Enum):
     """
     Enumeration representing energy types of devices.
@@ -17,9 +21,11 @@ class EType(Enum):
         SHIFTABLE (int): Represents a shiftable device.
         PHANTOM (int): Represents a phantom device (all phantom devices are shiftable).
     """
+
     NONE = 1
     SHIFTABLE = 2
-    PHANTOM = 3 
+    PHANTOM = 3
+
 
 class NotifType(Enum):
     """
@@ -32,6 +38,7 @@ class NotifType(Enum):
         PHANTOM (int): Represents a phantom mode-related notification.
         BASELINE (int): Represents a baseline threshold-related notification.
     """
+
     CREDS = 1
     DISCONNECTION = 2
     GOAL = 3

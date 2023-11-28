@@ -38,7 +38,7 @@ class Collector(Task):
         self.db = db
         self.fcm = fcm
         self.cloud = additional
-        self.ts = datetime.now()
+        self.ts = datetime.now() + timedelta(minutes=1)
         self.notified = False
         self.flags = {}
         self.logger = logging.getLogger(__name__)

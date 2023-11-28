@@ -1,74 +1,60 @@
-D:\PowerEye-backend
+├── .gitignore
+├── .vscode
 ├── codebase.tree
+├── Report.pdf
 ├── README.md
 ├── tracker_server
-|  ├── app
-|  |  ├── external_dependencies
-|  |  |  ├── fcm.py
-|  |  |  ├── meross_module.py
-|  |  |  ├── mongo.py
-|  |  |  └── tuya_module.py
-|  |  ├── interfaces
-|  |  |  ├── db.py
-|  |  |  ├── plug.py
-|  |  |  └── task.py
-|  |  ├── plug_controller.py
-|  |  ├── recommender.py
-|  |  ├── tasks
-|  |  |  ├── checker.py
-|  |  |  ├── collector.py
-|  |  |  ├── master.py
-|  |  |  └── updater.py
-|  |  ├── types_classes.py
-|  |  └── __init__.py
-|  ├── logs/
-|  ├── models_filesystem
-|  |  ├── cluster_models
-|  |  ├── forecast_models
-|  |  └── test_models
-|  ├── README.md
-|  ├── requirements.txt
-|  ├── scheduler.py
-|  ├── tests
-|  |  ├── integration/
-|  |  ├── unit/
-|  |  └── __init__.py
-|  └── venv/
+│  ├── .secrets
+│  │  ├── .env
+│  │  └── firebase-secret-key.json
+│  ├── app
+│  │  ├── external_dependencies
+│  │  │  ├── fcm.py
+│  │  │  ├── meross_module.py
+│  │  │  ├── mongo.py
+│  │  │  └── tuya_module.py
+│  │  ├── interfaces
+│  │  │  ├── db.py
+│  │  │  ├── plug.py
+│  │  │  └── task.py
+│  │  ├── tasks
+│  │  │  ├── checker.py
+│  │  │  ├── collector.py
+│  │  │  ├── master.py
+│  │  │  └── updater.py
+│  │  ├── __init__.py
+│  │  ├── plug_controller.py
+│  │  ├── recommender.py
+│  │  └── types_classes.py
+│  ├── logs
+│  ├── models_filesystem
+│  │  ├── cluster_models
+│  │  ├── forecast_models
+│  │  └── test_models
+│  ├── tests
+│  │  ├── integration
+│  │  |  ├── fixtures.py
+│  │  |  ├── test_checker.py
+│  │  |  ├── test_collector.py
+│  │  |  ├── test_master.py
+│  │  |  ├── test_updater.py
+│  │  |  └── __init__.py
+│  │  ├── unit
+│  │  |  ├── 64d154d494895e0b4c1bc081.csv
+│  │  |  ├── test_checker.py
+│  │  |  ├── test_collector.py
+│  │  |  ├── test_fcm.py
+│  │  |  ├── test_master.py
+│  │  |  ├── test_meross.py
+│  │  |  ├── test_mongo.py
+│  │  |  ├── test_recommender.py
+│  │  |  ├── test_scheduler.py
+│  │  |  ├── test_tuya.py
+│  │  |  ├── test_updater.py
+│  │  |  └── __init__.py
+│  │  └── __init__.py
+│  ├── venv
+│  ├── README.md
+│  ├── requirements.txt
+│  └── scheduler.py
 └── web_server
-|  ├── app
-|  |  ├── config.py
-|  |  ├── config_testing.py
-|  |  ├── controllers
-|  |  |  ├── appliance_controller.py
-|  |  |  ├── energy_controller.py
-|  |  |  ├── power_controller.py
-|  |  |  ├── room_controller.py
-|  |  |  └── user_controller.py
-|  |  ├── extensions.py
-|  |  ├── models
-|  |  |  ├── appliance_model.py
-|  |  |  ├── energy_model.py
-|  |  |  ├── notified_device_model.py
-|  |  |  ├── power_model.py
-|  |  |  ├── room_model.py
-|  |  |  ├── user_model.py
-|  |  |  └── __init__.py
-|  |  ├── uploads
-|  |  |  └── images
-|  |  ├── utils
-|  |  |  ├── cloud_interface.py
-|  |  |  ├── dummy_controller.py
-|  |  |  ├── enums.py
-|  |  |  ├── image_sys.py
-|  |  |  └── __init__.py
-|  |  ├── views
-|  |  |  ├── appliance_views.py
-|  |  |  ├── energy_views.py
-|  |  |  ├── power_views.py
-|  |  |  ├── room_views.py
-|  |  |  ├── user_views.py
-|  |  |  └── __init__.py
-|  |  └── __init__.py
-|  ├── requirements.txt
-|  └── venv/
-

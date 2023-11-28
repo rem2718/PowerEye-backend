@@ -14,6 +14,7 @@ To run each server separately, check the _README.md_ file inside their respectiv
 ## Thank You!
 
 Hope you enjoy this implementation :)
+For more detailed information about the whole system you can check _Report.pdf_.
 
 Made by:
 
