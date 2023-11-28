@@ -220,10 +220,10 @@ class Recommender:
         """
         app = powers.copy()
         if app.shape[0] < Recommender.POWER_THRESHOLD:
-            return None, None
+            return None
         app = Recommender._fill_na(app)
         if app.shape[0] < Recommender.ENERGY_THRESHOLD:
-            return None, None
+            return None
         app = Recommender._normalize(app)
         app = pd.DataFrame(app)
         app = app.reset_index()

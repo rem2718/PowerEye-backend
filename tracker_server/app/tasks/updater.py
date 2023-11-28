@@ -49,7 +49,7 @@ class Updater(Task):
         data = list(data)
         if len(data):
             powers = pd.DataFrame(data)
-            powers["timestamp"] = pd.to_datetime(powers["timestamp"])
+            powers["timestamp"] = pd.to_datetime(powers["timestamp"], errors="coerce")
             powers["timestamp"] = powers["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
             )
@@ -147,22 +147,24 @@ class Updater(Task):
         projection = {"current_month_energy": 1, "appliances": 1}
         user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projection)
         appliances = user["appliances"]
-        appliances = [app for app in appliances if not app['is_deleted']]
-        
+        appliances = [app for app in appliances if not app["is_deleted"]]
+
         yesterday_energys = self._yesterday_energys(appliances)
         self._update_energy(
             yesterday_energys, user["current_month_energy"], datetime.now()
         )
         yesterday_energys["user"] = ObjectId(self.user_id)
         yesterday_energys["date"] = self.date
+        self.db.insert_doc("Energys", yesterday_energys)
+        self.date += self.day
         
         day = datetime.now().weekday()
         if day == 6:
             powers = self._powers()
-            for app in appliances:
-                app_id = str(app["_id"])
-                self._apply_cluster(app_id, app["e_type"], powers[app_id])
-                self._apply_forecast(app_id, powers[app_id])
+            if powers.shape[0] > 0:
+                for app in appliances:
+                    app_id = str(app["_id"])
+                    self._apply_cluster(app_id, app["e_type"], powers[app_id])
+                    self._apply_forecast(app_id, powers[app_id])
 
-        self.db.insert_doc("Energys", yesterday_energys)
-        self.date += self.day
+        

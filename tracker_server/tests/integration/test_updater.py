@@ -17,8 +17,7 @@ def test_updater(updater_instance, db_instance):
     user = db_instance.get_doc("Users", {"_id": ObjectId("64d154d494895e0b4c1bc081")})
     appliances = user["appliances"]
     powers = updater_instance._powers()
-    yesterday_powers = updater_instance._yesterday_powers(powers)
-    if yesterday_powers.shape[0] == 0:
+    if powers.shape[0] == 0:
         previous_day = updater_instance.date - updater_instance.day
         query = {
             "user": ObjectId("64d154d494895e0b4c1bc081"),
@@ -30,12 +29,11 @@ def test_updater(updater_instance, db_instance):
         powers = db_instance.client["hemsproject"]["Powers"].find(query)
         db_instance.insert_docs("Powers", powers)
         powers = updater_instance._powers()
-        yesterday_powers = updater_instance._yesterday_powers(powers)
     yesterday_energys = updater_instance._yesterday_energys(appliances)
     new_energy = (
         sum(value for value in yesterday_energys.values()) + user["current_month_energy"]
     )
-    
+    updater_instance.db.update("Users", updater_instance.user_id, "appliances.$[].energy", 0)
     updater_instance.run()
 
     doc = db_instance.get_doc(

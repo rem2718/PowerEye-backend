@@ -154,12 +154,11 @@ def model():
 
 def test_run(checker_instance):
     checker_instance.run()
+    count = 1 # 1 goal
     if EPR.PEAK_START <= datetime.now().hour < EPR.PEAK_END:
-        count = 5  # 2 baseline, 1 goal, 2 peak
+        count += 2  # 2 peak
     elif datetime.now().min == 0:
-        count = 3  # 2 baseline, 1 goal
-    else:
-        count = 1 # 1 goal
+        count += 2  # 2 baseline
 
     assert checker_instance.fcm.notify.call_count == count
 
@@ -404,17 +403,16 @@ def test_notify_phantom(
 
 
 @pytest.mark.parametrize(
-    ("flag_before", "threshold", "baseline", "cur_min", "flag_after", "notified"),
+    ("flag_before", "threshold", "baseline", "flag_after", "notified"),
     (
-        (True, 1, True, 0, False, True),
-        (True, 1, True, 1, True, False),
-        (True, -1, True, 0, True, False),
-        (True, 1, False, 0, True, False),
-        (True, -1, False, 0, True, False),
-        (False, 1, True, 0, False, False),
-        (False, -1, True, 0, False, False),
-        (False, 1, False, 0, False, False),
-        (False, -1, False, 0, False, False),
+        (True, 1, True, False, True),
+        (True, -1, True, True, False),
+        (True, 1, False, True, False),
+        (True, -1, False, True, False),
+        (False, 1, True, False, False),
+        (False, -1, True, False, False),
+        (False, 1, False, False, False),
+        (False, -1, False, False, False),
     ),
 )
 def test_notify_baseline(
@@ -422,12 +420,11 @@ def test_notify_baseline(
     flag_before,
     threshold,
     baseline,
-    cur_min,
     flag_after,
     notified,
     monkeypatch,
 ):
-    powers = [
+    data = [
         {
             "5f5b940f60a37c2b4012b973": 100,
             "5f5b940f60a37c2b4012b974": 8,
@@ -439,14 +436,15 @@ def test_notify_baseline(
             "timestamp": datetime(2023, 1, 1, 1, 2, 1, 1),
         },
     ]
-    db_mock.get_docs = MagicMock(return_value=powers)
+    db_mock.get_docs = MagicMock(return_value=data)
+    powers = checker_instance._get_powers()
     app_id = "5f5b940f60a37c2b4012b973"
     app = {"energy": 0, "baseline_threshold": threshold, "name": "mocked_name"}
     checker_instance.baseline_flags[app_id] = flag_before
     monkeypatch.setattr(EPR, "check_baseline", MagicMock(return_value=baseline))
     count = checker_instance.fcm.notify.call_count
 
-    checker_instance._notify_baseline(app_id, app, cur_min)
+    checker_instance._notify_baseline(app_id, app, powers[app_id])
 
     assert checker_instance.baseline_flags[app_id] == flag_after
     if notified:

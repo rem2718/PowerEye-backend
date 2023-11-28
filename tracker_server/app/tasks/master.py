@@ -1,4 +1,3 @@
-from datetime import datetime
 import logging
 import asyncio
 
@@ -71,7 +70,7 @@ class Master(Task):
             name=f"updater_{id}",
             trigger="cron",
             hour=0,
-            minute=5,
+            minute=0,
             second=0,
         )
 
@@ -91,7 +90,7 @@ class Master(Task):
 
         for user in users:
             id = str(user["_id"])
-            if not self.scheduler.get_job(f"collector_{id}") and not user["is_deleted"]:
+            if not self.scheduler.get_job(f"checker_{id}") and not user["is_deleted"]:
                 if len(user["appliances"]):
                     data = {
                         "email": user["email"],

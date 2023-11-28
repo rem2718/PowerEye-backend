@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from bson import ObjectId
+import logging
 import pickle
 
 import pandas as pd
@@ -48,6 +49,7 @@ class Checker(Task):
         self.peak_flags = {}
         self.phantom_flags = {}
         self.baseline_flags = {}
+        self.logger = logging.getLogger(__name__)
 
     def _get_apps(self, appliances):
         """
@@ -103,7 +105,9 @@ class Checker(Task):
         """
         query = {
             "user": ObjectId(self.user_id),
-            "timestamp.hour": {"$lt": datetime.now().hour},
+            "timestamp": {
+                "$lt": datetime.now().replace(minute=0, second=0, microsecond=0)
+            },
         }
         projection = {"_id": 0, "user": 0}
         sort = [("timestamp", 1)]
@@ -116,7 +120,7 @@ class Checker(Task):
         data = list(data)
         if len(data):
             powers = pd.DataFrame(data)
-            powers["timestamp"] = pd.to_datetime(powers["timestamp"])
+            powers["timestamp"] = pd.to_datetime(powers["timestamp"], errors="coerce")
             powers["timestamp"] = powers["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
             )
@@ -221,22 +225,21 @@ class Checker(Task):
                 self.phantom_flags[app_id][0] = False
                 self.phantom_flags[app_id][1] = datetime.now()
 
-    def _notify_baseline(self, app_id, app, cur_min):
+    def _notify_baseline(self, app_id, app, powers):
         """
         Notify the user of baseline threshold condition.
         Args:
-            cur_min: The current minute.
             id: Appliance identifier.
             app: Appliance data.
+            powers: powers data
         """
         baseline = app["baseline_threshold"]
         name = app["name"]
         if app_id not in self.baseline_flags:
             self.baseline_flags[app_id] = True
-        if cur_min == 0 and baseline > 0 and self.baseline_flags[app_id]:
-            powers = self._get_powers()
+        if baseline > 0 and self.baseline_flags[app_id]:
             params = self._get_model(app_id, "forecast")
-            if params and EPR.check_baseline(baseline, powers[app_id], params):
+            if params and EPR.check_baseline(baseline, powers, params):
                 self.fcm.notify(self.user_id, NotifType.BASELINE, {"app_name": name})
                 self.baseline_flags[app_id] = False
 
@@ -247,17 +250,20 @@ class Checker(Task):
         projections = {"energy_goal": 1, "current_month_energy": 1, "appliances": 1}
         user = self.db.get_doc("Users", {"_id": ObjectId(self.user_id)}, projections)
         appliances = user["appliances"]
+        appliances = self._get_apps(appliances)
         self._reset_flags(datetime.now())
-
+        min = datetime.now().minute
+        if min == 0:
+            powers = self._get_powers()
         if len(appliances):
-            apps = self._get_apps(appliances)
-            powers = self._get_recent_powers(apps)
+            power = self._get_recent_powers(appliances)
             cur_energy = 0
-            for id, app in apps.items():
+            for id, app in appliances.items():
                 cur_energy += app["energy"]
                 self._notify_peak(id, app)
-                self._notify_baseline(id, app, datetime.now().minute)
-                if id in powers:
-                    self._notify_phantom(id, app, powers[id])
+                if id in power:
+                    self._notify_phantom(id, app, power[id])
+                if min == 0 and powers.shape[0] > 0:
+                    self._notify_baseline(id, app, powers[id])
 
             self._notify_goal(user, cur_energy)
