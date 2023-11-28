@@ -1,6 +1,5 @@
 # app\controllers\appliance_controller.py
 from flask import jsonify
-from app.models.appliance_model import Appliance
 from app.models.user_model import User
 from app.models.power_model import Power
 

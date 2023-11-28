@@ -2,11 +2,11 @@
 from flask import jsonify
 from app.models.room_model import Room
 from app.models.user_model import User
-from app.models.appliance_model import Appliance
 from mongoengine.errors import DoesNotExist
 import traceback
 from app.utils.enums import ApplianceType
 from bson import ObjectId
+
 
 
 # Helper function to validate room name
@@ -28,6 +28,7 @@ def validate_room_name(user, name):
         return True, None, None
 
     except Exception as e:
+        traceback.print_exc()
         return False, jsonify({'message': f'Error occurred while validating name: {str(e)}'}), 500
 
 def create_room(user_id, name, appliance_ids):
@@ -50,11 +51,11 @@ def create_room(user_id, name, appliance_ids):
         # Find and validate if the user has those appliances
         valid_appliances = []
         for appliance_id in appliance_ids:
-            appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
+            appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
             if not appliance:
                 return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
 
-            if appliance['is_deleted']:
+            if appliance.is_deleted:
                 return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
 
             valid_appliances.append(appliance)
@@ -71,6 +72,7 @@ def create_room(user_id, name, appliance_ids):
         return jsonify({'message': 'User not found'}), 404
     
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while creating room: {str(e)}'}), 500
 
 def get_room_appliances(user_id, room_id):
@@ -98,10 +100,10 @@ def get_room_appliances(user_id, room_id):
             if appliance:
                 room_appliances.append({
                     'appliance_id':str(appliance_id),
-                    'name': appliance['name'],
-                    'type': ApplianceType(appliance['type']).value,
-                    'connection_status': appliance['connection_status'],
-                    'status': appliance['status']
+                    'name': appliance.name,
+                    'type': ApplianceType(appliance.type).value,
+                    'connection_status': appliance.connection_status,
+                    'status': appliance.status
                 })
                 
         return jsonify({'appliances': room_appliances}), 200
@@ -158,6 +160,7 @@ def switch_room(user_id, room_id, new_status):
         return jsonify({'message': 'Room not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while switching room appliances status: {str(e)}'}), 500
 
 def add_appliances_to_room(user_id, room_id, appliance_ids):
@@ -176,38 +179,60 @@ def add_appliances_to_room(user_id, room_id, appliance_ids):
         # Ensure appliance_ids is a list
         if not isinstance(appliance_ids, list):
             return jsonify({'error': 'appliance_ids must be a list'}), 400
-        
+
         # Find and validate if the user has those appliances
         valid_appliances = []
-        for appliance_id in appliance_ids:
-            appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
-            if not appliance:
-                return jsonify({'error': f'Appliance with ID {appliance_id} not found for the user'}), 404
+        error_messages = []
 
-            if appliance['is_deleted']:
-                return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
+        for appliance_id in appliance_ids:
+            appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
+            if not appliance:
+                error_messages.append(f'Appliance with ID {appliance_id} not found for the user')
+                continue
+
+            if appliance.is_deleted:
+                error_messages.append(f'Appliance with ID {appliance_id} is marked as deleted')
+                continue
 
             valid_appliances.append(appliance)
 
         # Check if the appliances are already in the room
-            existing_appliances = set(room.appliances)
-            new_appliances = set(ObjectId(appliance_id) for appliance_id in appliance_ids)
+        existing_appliances = set(room.appliances)
+        new_appliances = {str(appliance._id) for appliance in valid_appliances}
 
-            # Identify which appliances are new and which are existing
-            new_appliances_set = new_appliances - existing_appliances
-            existing_appliances_set = new_appliances.intersection(existing_appliances)
+        # Identify which appliances are new and which are existing
+        new_appliances_set = new_appliances - existing_appliances
+        existing_appliances_set = new_appliances.intersection(existing_appliances)
 
-            # Add the valid appliance ids to the room if they are not already present
-            for appliance_id in new_appliances_set:
+        # Add the valid appliance ids to the room if they are not already present
+        added_appliances = 0
+        additional_error_messages = []
+
+        for appliance_id_str in new_appliances_set:
+            appliance_id = ObjectId(appliance_id_str)
+
+            # Check if the appliance is already in the room
+            if appliance_id not in existing_appliances:
                 room.update(push__appliances=appliance_id)
+                added_appliances += 1
+            else:
+                additional_error_messages.append(f'Appliance with ID {appliance_id_str} is already in the room')
 
-            response_message = f'Appliances added to room successfully. Added: {len(new_appliances_set)}, Existing: {len(existing_appliances_set)}'
+        # Check if any error messages were accumulated during the addition
+        if additional_error_messages:
+            error_messages.extend(additional_error_messages)
 
-            return jsonify({'message': response_message}), 200
+        # Check if any error messages were accumulated during user appliance validation
+        if error_messages:
+            return jsonify({'error_messages': error_messages}), 400
 
+        response_message = f'Appliances added to room successfully. Added: {added_appliances}, Existing: {len(existing_appliances_set)}'
+        return jsonify({'message': response_message}), 200
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
 
 
 def get_all_user_rooms(user_id):
@@ -233,11 +258,11 @@ def get_all_user_rooms(user_id):
 
 
             for appliance_id in room.appliances:
-                appliance = next((app for app in user.appliances if app['_id'] == appliance_id), None)
+                appliance = next((app for app in user.appliances if app._id == appliance_id), None)
                 if not appliance:
                     return jsonify({'error': f'Appliance with ID {str(appliance_id)} not found for the user'}), 404
 
-                if appliance['is_deleted']:
+                if appliance.is_deleted:
                     return jsonify({'error': f'Appliance with ID {str(appliance_id)} is marked as deleted'}), 400
 
                 room_data['appliances'].append(str(appliance_id))
@@ -264,12 +289,10 @@ def delete_appliance_from_room(user_id, room_id, appliance_id):
             return jsonify({'error': 'Room not found or does not belong to the user'}), 404
 
         # Find and validate if the user has that appliance
-        appliance = next((app for app in user.appliances if str(app['_id']) == appliance_id), None)
+        appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
         if not appliance:
             return jsonify({'error': 'Appliance not found for the user'}), 404 
         
-        if appliance['is_deleted']:
-            return jsonify({'error': f'Appliance with ID {appliance_id} is marked as deleted'}), 400
 
         if appliance._id in room.appliances:
             room.appliances.remove(appliance._id)
@@ -283,6 +306,7 @@ def delete_appliance_from_room(user_id, room_id, appliance_id):
         return jsonify({'message': 'Room not found.'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while removing appliance from room: {str(e)}'}), 500
 
 def update_room_name(user_id, room_id, new_name):
@@ -312,6 +336,7 @@ def update_room_name(user_id, room_id, new_name):
         return jsonify({'error': 'Room not found.'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while updating room: {str(e)}'}), 500
     
 def delete_room(user_id, room_id):
@@ -335,4 +360,5 @@ def delete_room(user_id, room_id):
         return jsonify({'message': 'Room not found'}), 404
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({'message': f'Error occurred while deleting room: {str(e)}'}), 500

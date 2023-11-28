@@ -17,5 +17,10 @@ class Appliance(db.EmbeddedDocument):
     e_type = db.EnumField(EType, default=EType.NONE)
 
     meta = {
-        'collection': 'Appliances'  # the real collection name here
+        'collection': 'Appliances',  # the real collection name here
+        'indexes': [
+        {
+            'fields': ['_id'],
+        }
+        ]
     }

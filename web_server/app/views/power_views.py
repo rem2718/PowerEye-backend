@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint
 from app.controllers.power_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 

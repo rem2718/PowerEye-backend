@@ -2,8 +2,6 @@
 from flask import jsonify ,request ,send_file
 from app.models.user_model import User
 from app.models.room_model import Room
-from app.models.power_model import Power
-from app.models.energy_model import Energy
 from app.models.notified_device_model import Notified_Device # Import the Notified_Device model
 from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
@@ -16,7 +14,9 @@ from werkzeug.utils import secure_filename
 import mimetypes
 import os
 from mongoengine.errors import DoesNotExist
-import traceback
+
+
+
 
 # Function to validate PowerEye system password
 def validate_password(password):
@@ -290,7 +290,7 @@ def delete_goal(user_id):
         return jsonify({'error': str(e)}), 500
 
 
-def upload_profile_pic(user_id,file):
+def upload_profile_pic(user_id,file,filename_with_extension):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
 
@@ -298,51 +298,46 @@ def upload_profile_pic(user_id,file):
         return jsonify({'message': 'User not found.'}), 404
     
     if not file:
-        return jsonify({'error': 'No file provided'}), 400
+        return jsonify({'error': 'No image data provided'}), 400
 
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file extension'}), 400
+    if not filename_with_extension:
+        return jsonify({'error': 'No filename provided'}), 400
 
     # Generate a unique filename to avoid conflicts
-    filename = secure_filename(file.filename)
-    # Generates the full file path by appending the UPLOADS_FOLDER and filename together, 
-    # ensuring that the correct path is formed regardless of the operating system using (/ or \)
-    save_path = os.path.join(UPLOADS_FOLDER, filename)
+    filename = f'{user_id}.png'
 
     # Save the uploaded profile picture file to the file system.
-    try:
-        file.save(save_path)
-        return jsonify({'message': 'Profile picture uploaded successfully'}),200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if save_base64_image(file, filename):
+        return jsonify({'message': 'Profile picture uploaded successfully'}), 200
+    else:
+        return jsonify({'error': 'Failed to save profile picture'}), 500
     
-def get_profile_pic(user_id,filename):
+def get_profile_pic(user_id):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
     if not user:
         return jsonify({'message': 'User not found.'}), 404
-    
-    if not filename:
-        return jsonify({'error': 'No filename provided'}), 400
 
     try:
-        file_path = os.path.join(UPLOADS_FOLDER, filename)
-        # Guess the mimetype(extension: png, jpg...) of the file based on the file path
-        mimetype, _ = mimetypes.guess_type(file_path)
-        if mimetype:
-            # If mimetype is available, return the file with the specified mimetype
-            return send_file(file_path, mimetype=mimetype) ,200
-        else:
-            # If mimetype is not available, return the file without specifying a mimetype
-            return send_file(file_path),200
+        # Try all allowed extensions
+        for extension in ALLOWED_EXTENSIONS:
+            filename = f'{user_id}.{extension}'
+            file_path = os.path.join(UPLOADS_FOLDER, filename)
+            if os.path.exists(file_path):
+                # Guess the mimetype of the file based on the file path
+                mimetype, _ = mimetypes.guess_type(file_path)
+                if mimetype:
+                    # If mimetype is available, return the file with the specified mimetype
+                    return jsonify({'image': file_to_base64(file_path)}), 200
+                else:
+                    # If mimetype is not available, return the file without specifying a mimetype
+                    return jsonify({'image': file_to_base64(file_path)}), 200
     except FileNotFoundError:
         return jsonify({'error': 'Profile picture not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+
 
 def set_FCM_token(user_id, device_id, fcm_token):
     try:

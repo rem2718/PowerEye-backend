@@ -11,9 +11,6 @@ from app.utils.cloud_interface import cloud
 import traceback
 
 
-# from meross_interface import get_smartplugs, switch
-
-
 # Helper function to map the type of the appliances with (shiftable, phantom, none)
 def map_appliance_type_to_e_type(appliance_type):
     appliance_type_to_e_type = {

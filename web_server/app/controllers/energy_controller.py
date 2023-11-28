@@ -4,172 +4,295 @@ from app.models.room_model import Room
 from app.models.user_model import User
 
 
-from datetime import datetime, timedelta,date
+from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import jsonify, make_response
 from mongoengine.errors import DoesNotExist
 import traceback
-import calendar
+from calendar import month_abbr
+from dateutil.relativedelta import relativedelta  # Add this import
 
-def get_appliance_weekly_energy(user_id):
+
+WEEKS= 4
+YEARS= 4
+CURRENT_DATE = datetime.now()
+CURRENT_MONTH = CURRENT_DATE.month
+CURRENT_YEAR = CURRENT_DATE.year
+
+CURRENT_YEAR_START_DATE = datetime(CURRENT_YEAR, 1, 1)
+CURRENT_YEAR_END_DATE = datetime(CURRENT_YEAR, 12, 31)
+
+def convert_to_weekly_energy_format(data):
+    # Convert date strings to datetime objects
+    formatted_data = {datetime.strptime(date_str, '%Y-%m-%d').date(): values for date_str, values in data.items()}
+
+    # Sort the data by date in ascending order
+    sorted_data = sorted(formatted_data.items(), key=lambda x: x[0])
+
+    # Initialize result list
+    result_list = []
+
+    # Group the data into weeks
+    week_data = defaultdict(list)
+    current_week_start = None
+
+    for date, values in sorted_data:
+        if not current_week_start:
+            current_week_start = date
+
+        week_data[current_week_start].append(values)
+
+        if date.weekday() == 6:  # Sunday
+            current_week_start = None
+
+    # Generate the final result
+    for i, (week_start, week_values) in enumerate(reversed(list(week_data.items()))):
+        if i == 0:
+            week_title = "This Week"
+        else:
+            week_title = f"{(datetime.now().date() - week_start).days // 7 } week(s) ago"
+
+        energy_values = defaultdict(list)
+
+        # Ensure the week starts from Monday and fill missing days with zeros
+        for day_values in week_values:
+            current_day = day_values['day']
+            energy_values[current_day].append(day_values['energy'])
+
+        # Fill missing days with zeros
+        for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+            if day not in energy_values:
+                energy_values[day] = [0]
+
+        result_list.append({
+            'title': week_title,
+            'label': list(energy_values.keys()),
+            'energy': [sum(values) / len(values) if values else 0 for values in energy_values.values()]
+        })
+
+    return result_list
+
+def convert_to_monthly_energy_format(data):
+    monthly_data = []
+
+    # Extract unique month names from the data
+    month_names = list(set(date.split('-')[1] for date in data.keys()))
+    month_names.sort()  # Sort month names
+
+    for month in month_names:
+        # Filter data for the current month
+        month_data = {date: value for date, value in data.items() if date.startswith(f'2023-{month}')}
+        
+        # Extract day labels and energy values
+        day_labels = list(range(1, len(month_data) + 1))
+        energy_values = list(month_data.values())
+
+        # Get the month abbreviation
+        month_abbrv = month_abbr[int(month)]
+
+        # Create a monthly entry
+        monthly_entry = {
+            'title': month_abbrv,
+            'label': day_labels,
+            'energy': energy_values
+        }
+
+        # Append the entry to the result list
+        monthly_data.append(monthly_entry)
+
+    return monthly_data
+
+
+
+def convert_to_yearly_energy_format(data):
+    current_year = datetime.now().year
+    monthly_data = [[0] * 12 for _ in range(current_year - min(map(lambda x: int(x[:4]), data.keys())) + 1)]
+
+    for date, value in data.items():
+        year, month, _ = map(int, date.split('-'))
+        year_index = current_year - year
+        if 0 <= year_index < len(monthly_data):
+            monthly_data[year_index][month - 1] += value
+
+    # Extract unique month names from the data
+    unique_month_names = sorted(set(date.split('-')[1] for date in data.keys()), key=lambda x: int(x))
+    labels = [month_abbr[int(month)] for month in unique_month_names]
+
+    yearly_data = [
+        {
+            'title': f'Year {current_year - i}',
+            'label': labels,
+            'energy': month_values
+        }
+        for i, month_values in enumerate(monthly_data)
+    ]
+
+    return yearly_data
+            
+    
+
+
+# _____________________________________________________________________________________________________________________________________
+
+def get_appliance_daily_energy(user_id, appliance_id):
     try:
-        current_date = datetime.now().date()
-        
-        # Get user 
+
+        # Get user
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return make_response(jsonify({'message': 'User not found.'}), 404)
+        appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
+
+        if not user or not appliance:
+            message = 'User not found.' if not user else 'Appliance not found.'
+            return make_response(jsonify({'message': message}), 404)
         
-        # Initialize result list to store energy data for all appliances
-        all_appliances_result = []
-
-        # Loop through all appliances of the user
-        for appliance in user.appliances:
-            appliance_result = []
-
-            # Get appliance
-            if appliance.is_deleted:
-                continue
-            
-            # Calculate energy consumption values
-            
-            result = defaultdict(float)
-
-            for i in range(0, 29):  # Loop through dates from today to # weeks ago
-                date_to_query = current_date - timedelta(days=i)
-                
-                if date_to_query == current_date:
-                    energy_value = appliance.energy  # Update the last added value
-                else:
-                    # Query energy documents for the specified date and sort by date in ascending order
-                    energy_documents = Energy.objects(user=user_id, date=date_to_query).order_by('date')
-
-                    # If no energy document, append 0 to the result for each appliance
-                    if not energy_documents:
-                        energy_value = 0
-                    else:
-                        # Sum up the energy values for the specified appliance
-                        for energy_doc in energy_documents:
-                            energy_value = abs(getattr(energy_doc, str(appliance._id)))
-                
-                result[date_to_query.strftime('%Y-%m-%d')] += energy_value
-
-
-            for i in range(4):
-                title = 'this week' if i == 0 else f'{i} {"week" if i == 1 else "weeks"} ago'
-                start_date = current_date - timedelta(days=current_date.weekday() + i * 7)
-                labels = [start_date + timedelta(days=j) for j in range(7)]
-                energy_values = [result[label.strftime('%Y-%m-%d')] for label in labels]
-
-                appliance_result.append({
-                    'title': title,
-                    'label': [label.strftime('%A') for label in labels],
-                    'energy': energy_values
-                })
-
-
-            # Create a dictionary for the current appliance
-            appliance_data = {str(appliance._id): appliance_result}
-
-            # Append the appliance data to the result list
-            all_appliances_result.append(appliance_data)
-
-
-        return make_response(jsonify(all_appliances_result), 200)
-
-        
-        
+        return make_response(jsonify(appliance.energy), 200)
+    
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
     
-    
-def get_room_weekly_energy(user_id):
-    try:
-        current_date = datetime.now()
 
+def get_room_daily_energy(user_id, room_id):
+    try:
+
+        # Get user and room
+        user = User.objects.get(id=user_id, is_deleted=False)
+        room = Room.objects.get(id=room_id)
+        if not user or not room:
+            message = 'User not found.' if not room else 'Room not found.'
+            return make_response(jsonify({'message': message}), 404)
+
+        # Filter appliances by matching IDs and not deleted
+        room_appliances = [
+            app for app in user.appliances
+            if str(app._id) in map(str, room.appliances) and not app.is_deleted
+        ]
+
+        # Calculate total energy consumption for the room
+        total_energy_consumption = sum(appliance.energy for appliance in room_appliances)
+
+        return make_response(jsonify(total_energy_consumption), 200)
+
+    except DoesNotExist:
+        return make_response(jsonify({'message': 'User or Room not found'}), 404)
+
+
+    except Exception as e:
+        traceback.print_exc()
+        return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}), 500)
+
+
+def get_total_daily_energy(user_id):
+    try:
         # Get user 
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return make_response(jsonify({'message': 'User not found.'}), 404)
         
-        # Get room
-        rooms = Room.objects(user_id=user_id)
-        if not rooms:
-            return make_response(jsonify({'message': ' No Rooms found'}), 404)
+        # Filter out deleted appliances
+        appliances = [app for app in user.appliances if not app.is_deleted]
 
-        
-        # Initialize result list to store energy data for all rooms
-        all_rooms_result = []
+        # Calculate total energy consumption for the room
+        total_energy_consumption = sum(appliance.energy for appliance in appliances)
 
+        return make_response(jsonify(total_energy_consumption), 200)
 
-        for room in rooms:
-            room_result = []
-            # Filter out deleted appliances
-            appliances_in_room = [app for app in user.appliances if app._id in room.appliances and not app.is_deleted]
-            
-
-            # Calculate energy consumption values
-            
-            result = defaultdict(list)
-
-            for i in range(0, 29):  # Loop through dates from today to # weeks ago
-                date_to_query = current_date - timedelta(days=i)
-                # date_to_query= date_to_query.date()
-                energy_value =0.0
-                
-                if date_to_query == current_date:
-                    for appliance in appliances_in_room:
-                        energy_value += abs(appliance.energy) 
-                else:
-                    # Query energy documents for the specified date and sort by date in ascending order
-                    energy_documents = Energy.objects(user=user_id, date=date_to_query).order_by('date')
-                    
-                    # If no energy document, append (0, 0)
-                    if not energy_documents:
-                        energy_value =0.0
-                    else:
-                        for energy_doc in energy_documents:
-                            for appliance in appliances_in_room:
-                                if str(appliance._id) in energy_doc:
-                                    energy_value += abs(energy_doc[str(appliance._id)])
-                                    
-                result[date_to_query.strftime('%Y-%m-%d')].append((str(room.id), energy_value))
-
-
-            for i in range(4):
-                title = 'this week' if i == 0 else f'{i} {"week" if i == 1 else "weeks"} ago'
-                start_date = current_date - timedelta(days=current_date.weekday() + i * 7)
-                labels = [start_date + timedelta(days=j) for j in range(7)]
-                energy_values = [0] * 7
-
-                for label in labels:
-                    label_str = label.strftime('%Y-%m-%d')
-                    if label_str in result:
-                        energy_values[labels.index(label)] = sum([item[1] for item in result[label_str]])
-
-                room_result.append({
-                    'title': title,
-                    'label': [label.strftime('%A') for label in labels],
-                    'energy': energy_values
-                })
-                
-            # Create a dictionary for the current appliance
-            room_data = {str(room.id): room_result}
-
-            # Append the appliance data to the result list
-            all_rooms_result.append(room_data)
-
-
-        return make_response(jsonify(all_rooms_result), 200)
-
-        
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User not found'}), 404)
 
+    except Exception as e:
+        traceback.print_exc()
+        return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}), 500)
+    
+# _____________________________________________________________________________________________________________________________________
+
+def get_appliance_weekly_energy(user_id, appliance_id):
+    try:
+        # Get user and appliance
+        user = User.objects.get(id=user_id, is_deleted=False)
+        appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
+
+        if not user or not appliance:
+            message = 'User not found.' if not user else 'Appliance not found.'
+            return make_response(jsonify({'message': message}), 404)
+
+        # Fetch energy documents for the last 28 days (4 weeks)
+        last_date_to_query = CURRENT_DATE - timedelta(WEEKS*7)
+        energy_docs = Energy.objects(user=user_id, date__gte=last_date_to_query)
+
+        # Create a dictionary to store energy values for each date along with the day name prefix
+        result = {date.strftime('%Y-%m-%d'): {'day': date.strftime('%a'), 'energy': 0} for date in (CURRENT_DATE - timedelta(days=i) for i in range((WEEKS*7)+1))}
+
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            date_str = energy_doc.date.strftime('%Y-%m-%d')
+            result[date_str]['energy'] = abs(getattr(energy_doc, str(appliance._id), 0))
+
+        # CURRENT_DATE energy is taken from the appliance document
+        result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': appliance.energy}
+        
+        print(result)
+        
+
+        # Create the response data
+        response_data = {
+            'appliance_id': str(appliance._id),
+            'weekly_energy_data': convert_to_weekly_energy_format(result)
+        }
+
+        return make_response(jsonify(response_data), 200)
+
+    except DoesNotExist:
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
+
+    except Exception as e:
+        traceback.print_exc()
+        return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
+
+    
+def get_room_weekly_energy(user_id, room_id):
+    try:
+
+        # Get user and room
+        user = User.objects.get(id=user_id, is_deleted=False)
+        room = Room.objects.get(id=room_id)
+        if not user or not room:
+            message = 'User not found.' if not room else 'Room not found.'
+            return make_response(jsonify({'message': message}), 404)
+        weeks= 5
+        # Fetch energy documents for the last 28 days (4 weeks)
+        date_to_query = CURRENT_DATE - timedelta(days=weeks*7)
+        energy_docs = Energy.objects(user=user_id, date__gte=date_to_query)
+
+        # Create a dictionary to store energy values for each date along with the day name prefix
+        result = {date.strftime('%Y-%m-%d'): {'day': date.strftime('%a'), 'energy': 0} for date in (CURRENT_DATE - timedelta(days=i) for i in range(weeks*7 +1))}
+
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance_id in room.appliances:
+                date_str = energy_doc.date.strftime('%Y-%m-%d')
+                result[date_str]['energy'] += abs(getattr(energy_doc, str(appliance_id), 0))
+
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance_id in room.appliances:
+            appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
+            today_energy += appliance.energy
+        result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': today_energy}
+        print(result)
+
+        # Create the response data
+        response_data = {
+            'room_id': str(room.id),
+            'weekly_energy_data': convert_to_weekly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
+
+    except DoesNotExist:
+        return make_response(jsonify({'message': 'User or Room not found'}), 404)
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
@@ -177,67 +300,43 @@ def get_room_weekly_energy(user_id):
 
 def get_total_weekly_energy(user_id):
     try:
-        current_date = datetime.now()
 
         # Get user 
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return make_response(jsonify({'message': 'User not found.'}), 404)
         
-
         # Filter out deleted appliances
         appliances = [app for app in user.appliances if not app.is_deleted]
         
+        # Fetch energy documents for the last 28 days (4 weeks)
+        date_to_query = CURRENT_DATE - timedelta(WEEKS*7)
+        energy_docs = Energy.objects(user=user_id, date__gte=date_to_query)
 
-        # Calculate energy consumption values
+        # Create a dictionary to store energy values for each date along with the day name prefix
+        result = {date.strftime('%Y-%m-%d'): {'day': date.strftime('%a'), 'energy': 0} for date in (CURRENT_DATE - timedelta(days=i) for i in range((WEEKS*7)+1))}
         
-        result = defaultdict(list)
-
-        for i in range(0, 29):  # Loop through dates from today to # weeks ago
-            date_to_query = current_date - timedelta(days=i)
-            date_to_query= date_to_query.date()
-            energy_value =0.0
-            
-            if date_to_query == current_date.date():
-                for appliance in appliances:
-                    energy_value += abs(appliance.energy) 
-            else:
-                # Query energy documents for the specified date and sort by date in ascending order
-                energy_documents = Energy.objects(user=user_id, date=date_to_query).order_by('date')
-                # If no energy document, append (0, 0)
-                if not energy_documents:
-                    energy_value =0.0
-                else:
-                    for energy_doc in energy_documents:
-                        for appliance in appliances:
-                            if str(appliance._id) in energy_doc:
-                                energy_value += abs(energy_doc[str(appliance._id)])
-                                
-            result[date_to_query.strftime('%Y-%m-%d')].append(energy_value)
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance in appliances:
+                    date_str = energy_doc.date.strftime('%Y-%m-%d')
+                    result[date_str]['energy'] += abs(getattr(energy_doc, str(appliance._id), 0))
         
-        current_date = current_date.date()
-        weeks_data = []
-
-        #formatting
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance in appliances:
+            today_energy += appliance.energy    
+        result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': today_energy}
         
-        for i in range(4):
-            title = 'this week' if i == 0 else f'{i} {"week" if i == 1 else "weeks"} ago'
-            start_date = current_date - timedelta(days=current_date.weekday() + i * 7)
-            labels = [start_date + timedelta(days=j) for j in range(7)]
-            energy_values = [0] * 7
+        print (result)
 
-            for label in labels:
-                label_str = label.strftime('%Y-%m-%d')
-                if label_str in result:
-                    energy_values[labels.index(label)] = sum(result[label_str])
+        # Create the response data
+        response_data = {
+            'weekly_energy_data': convert_to_weekly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
 
-            weeks_data.append({
-                'title': title,
-                'label': [label.strftime('%A') for label in labels],
-                'energy': energy_values
-            })
-        return make_response(jsonify(weeks_data), 200)
-        
+
     except DoesNotExist:
         return False, jsonify({'message': 'User not found'}), 404
 
@@ -245,209 +344,101 @@ def get_total_weekly_energy(user_id):
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
 
+# _____________________________________________________________________________________________________________________________________
 
-def get_appliance_monthly_energy(user_id):
+def get_appliance_monthly_energy(user_id, appliance_id):
     try:
-        
-        # Get user
+        # Get user and appliance
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return make_response(jsonify({'message': 'User not found.'}), 404)
+        appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
 
-        # Get the current date
-        current_date = datetime.now()
-
-        # Extract the current month and year
-        current_month = current_date.month
-        current_year = current_date.year
-
-        # Initialize result list to store energy data for all appliances
-        all_appliances_result = []
-
-        # Loop through all appliances of the user
-        for appliance in user.appliances:
-            appliance_result=[]
-            
-            if appliance.is_deleted:
-                continue
-            
-            # Loop through each month since the beginning of the year
-            for month in range(1, current_month + 1): #the loop iterates over the months from January (1) up to the current month (inclusive).
-                # Get the first day of the month
-                start_date = datetime(current_year, month, 1)
-
-                # Calculate the last day of the month
-                _, last_day_of_month = calendar.monthrange(current_year, month)#The first value in the tuple is the weekday of the first day of the month (0 for Monday, 1 for Tuesday, and so on). In this case, it's represented by _ (an underscore), which is a common convention in Python to indicate a variable that is not going to be used. The first value is ignored in this case.The second value in the tuple is the number of days in the month
-                end_date = datetime(current_year, month, last_day_of_month)
-                
-                # Initialize the energy values for each day
-                energy = []
-                label = []
-                
-                
-                energy_documents = Energy.objects(
-                    user=user_id,
-                    date__gte=start_date,
-                    date__lte=end_date
-                ).order_by('date')
-                
-                
-                for day in range((end_date - start_date).days + 1):
-                        date_to_query = start_date + timedelta(days=day)
-
-                        # Check if it's the current date
-                        if date_to_query.date() == current_date.date():
-                            energy_value = appliance.energy
-                        else:
-                            # Filter energy documents for the specified day and appliance
-                            energy_docs_for_day = [doc for doc in energy_documents if str(appliance._id) in doc and doc.date == date_to_query.date()]
+        if not user or not appliance:
+            message = 'User not found.' if not user else 'Appliance not found.'
+            return make_response(jsonify({'message': message}), 404)
 
 
-                            # If no energy document, append (0, 0)
-                            if not energy_docs_for_day:
-                                energy_value =0.0
-                            else:
-                                energy_value = abs(energy_docs_for_day[0][str(appliance._id)])
+        # Fetch energy documents for the current year data
 
-                        energy.append(energy_value)
-                        label.append(day+1)
-                title = calendar.month_name[month]
-            
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=CURRENT_YEAR_START_DATE,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
 
-                # Convert result to the desired format
-                formatted_month_data = {
-                    'title': title,
-                    'label': label,
-                    'energy': energy
-                }
+        # Create a dictionary to store energy values for each date
+        date_range = [CURRENT_YEAR_START_DATE.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - CURRENT_YEAR_START_DATE).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
+        
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            date_str = energy_doc.date.strftime('%Y-%m-%d')
+            result[date_str] = abs(getattr(energy_doc, str(appliance._id), 0))
 
-                appliance_result.append(formatted_month_data)
-            # Create a dictionary for the current appliance
-            appliance_data = {str(appliance._id): appliance_result}
+        # CURRENT_DATE energy is taken from the appliance document
+        result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
+        
+        print(result)
+        # Create the response data
+        response_data = {
+            'appliance_id': str(appliance._id),
+            'monthly_energy_data': convert_to_monthly_energy_format(result)
+        }
 
-            # Append the appliance data to the result list
-            all_appliances_result.append(appliance_data)
-
-
-        return make_response(jsonify(all_appliances_result), 200)
-
-
-
-        return make_response(jsonify(formatted_data), 200)
+        return make_response(jsonify(response_data), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
     
-    
-def get_room_monthly_energy(user_id):
+def get_room_monthly_energy(user_id,room_id):
     try:
-        current_date = datetime.now()
-
-        # Extract the current month and year
-        current_month = current_date.month
-        current_year = current_date.year
-
         
-
-        # Get user 
+        # Get user and room
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return make_response(jsonify({'message': 'User not found.'}), 404)
-        
-        # Get room
-        rooms = Room.objects(user_id=user_id)
-        if not rooms:
-            return make_response(jsonify({'message': ' No Rooms found'}), 404)
+        room = Room.objects.get(id=room_id)
+        if not user or not room:
+            message = 'User not found.' if not room else 'Room not found.'
+            return make_response(jsonify({'message': message}), 404)
 
         
-        # Initialize result list to store energy data for all rooms
-        all_rooms_result = []
-
+        # Fetch energy documents for the current year data
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=CURRENT_YEAR_START_DATE,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
         
-        for room in rooms:
-            room_result = []
-            # Filter out deleted appliances
-            appliances_in_room = [app for app in user.appliances if app._id in room.appliances and not app.is_deleted]
+        # Create a dictionary to store energy values for each date
+        date_range = [CURRENT_YEAR_START_DATE.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - CURRENT_YEAR_START_DATE).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
             
-
-                
             
-            # Calculate energy consumption values
-
-            formatted_data = []
-            # Loop through each month since the beginning of the year
-            for month in range(1, current_month + 1): #the loop iterates over the months from January (1) up to the current month (inclusive).
-                # Get the first day of the month
-                start_date = datetime(current_year, month, 1)
-
-                # Calculate the last day of the month
-                _, last_day_of_month = calendar.monthrange(current_year, month)#The first value in the tuple is the weekday of the first day of the month (0 for Monday, 1 for Tuesday, and so on). In this case, it's represented by _ (an underscore), which is a common convention in Python to indicate a variable that is not going to be used. The first value is ignored in this case.The second value in the tuple is the number of days in the month
-                end_date = datetime(current_year, month, last_day_of_month)
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance_id in room.appliances:
+                date_str = energy_doc.date.strftime('%Y-%m-%d')
+                result[date_str] += abs(getattr(energy_doc, str(appliance_id), 0))
                 
-                # Initialize the energy values for each day
-                energy = []
-                label = []
-                
-                
-                energy_documents = Energy.objects(
-                    user=user_id,
-                    date__gte=start_date,
-                    date__lte=end_date
-                ).order_by('date')
-                
-                
-                for day in range((end_date - start_date).days + 1):
-                    energy_value=0
-                    date_to_query = start_date + timedelta(days=day)
-
-                    # Check if it's the current date
-                    if date_to_query.date() == current_date.date():
-                        for appliance in appliances_in_room:
-                            energy_value += abs(appliance.energy)
-                    else:
-                        # Filter energy documents for the specified day and appliance
-                        energy_docs_for_day = [doc for doc in energy_documents if doc.date == date_to_query.date()]
-
-                        
-
-                        # If no energy document, append (0, 0)
-                        if not energy_docs_for_day:
-                            energy_value = 0.0
-                        else:
-                            for energy_doc in energy_docs_for_day:
-                                for appliance in appliances_in_room:
-                                    if str(appliance._id) in energy_doc:                                        
-                                        energy_value += abs(energy_doc[str(appliance._id)])
-
-                    energy.append(energy_value)
-                    label.append(day+1)
-                title = calendar.month_name[month]
-                
-
-                # Convert result to the desired format
-                formatted_month_data = {
-                    'title': title,
-                    'label': label,
-                    'energy': energy
-                }
-
-                room_result.append(formatted_month_data)
-                
-            # Create a dictionary for the current appliance
-            room_data = {str(room.id): room_result}
-
-            # Append the appliance data to the result list
-            all_rooms_result.append(room_data)
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance_id in room.appliances:
+            appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
+            today_energy += appliance.energy
+        result[CURRENT_DATE.strftime('%Y-%m-%d')]=today_energy
 
 
-        return make_response(jsonify(all_rooms_result), 200)
+        # Create the response data
+        response_data = {
+            'room_id': str(room.id),
+            'monthly_energy_data': convert_to_monthly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User or Room not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
@@ -456,84 +447,46 @@ def get_room_monthly_energy(user_id):
 
 def get_total_monthly_energy(user_id):
     try:
-        # Get user
+        # Get user 
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return make_response(jsonify({'message': 'User not found.'}), 404)
-
         
         # Filter out deleted appliances
         appliances = [app for app in user.appliances if not app.is_deleted]
         
-        # Get the current date
-        current_date = datetime.now()
+        
+        # Fetch energy documents for the current year data
 
-        # Extract the current month and year
-        current_month = current_date.month
-        current_year = current_date.year
-
-        # Calculate energy consumption values
-
-        formatted_data = []
-        # Loop through each month since the beginning of the year
-        for month in range(1, current_month + 1): #the loop iterates over the months from January (1) up to the current month (inclusive).
-            # Get the first day of the month
-            start_date = datetime(current_year, month, 1)
-
-            # Calculate the last day of the month
-            _, last_day_of_month = calendar.monthrange(current_year, month)#The first value in the tuple is the weekday of the first day of the month (0 for Monday, 1 for Tuesday, and so on). In this case, it's represented by _ (an underscore), which is a common convention in Python to indicate a variable that is not going to be used. The first value is ignored in this case.The second value in the tuple is the number of days in the month
-            end_date = datetime(current_year, month, last_day_of_month)
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=CURRENT_YEAR_START_DATE,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
+        
+        # Create a dictionary to store energy values for each date
+        date_range = [CURRENT_YEAR_START_DATE.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - CURRENT_YEAR_START_DATE).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
             
-            # Initialize the energy values for each day
-            energy = []
-            label = []
-            
-            
-            energy_documents = Energy.objects(
-                user=user_id,
-                date__gte=start_date,
-                date__lte=end_date
-            ).order_by('date')
-            
-            
-            for day in range((end_date - start_date).days + 1):
-                energy_value=0
-                date_to_query = start_date + timedelta(days=day)
-
-                # Check if it's the current date
-                if date_to_query.date() == current_date.date():
-                    for appliance in appliances:
-                        energy_value += abs(appliance.energy)
-                else:
-                    # Filter energy documents for the specified day and appliance
-                    energy_docs_for_day = [doc for doc in energy_documents if doc.date == date_to_query.date()]
-
-                    
-
-                    # If no energy document, append (0, 0)
-                    if not energy_docs_for_day:
-                        energy_value = 0.0
-                    else:
-                        for energy_doc in energy_docs_for_day:
-                            for appliance in appliances:
-                                if str(appliance._id) in energy_doc:
-                                    energy_value += abs(energy_doc[str(appliance._id)])
-                energy.append(energy_value)
-                label.append(day+1)
-            title = calendar.month_name[month]
-            
-
-            # Convert result to the desired format
-            formatted_month_data = {
-                'title': title,
-                'label': label,
-                'energy': energy
-            }
-
-            formatted_data.append(formatted_month_data)
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance in appliances:
+                date_str = energy_doc.date.strftime('%Y-%m-%d')
+                result[date_str] += abs(getattr(energy_doc, str(appliance._id), 0))
+                
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance in appliances:
+            appliance = next((app for app in user.appliances if str(app._id) == str(appliance._id) and not app.is_deleted), None)
+            today_energy += appliance.energy
+        result[CURRENT_DATE.strftime('%Y-%m-%d')]=today_energy
 
 
-        return make_response(jsonify(formatted_data), 200)
+        # Create the response data
+        response_data = {
+            'monthly_energy_data': convert_to_monthly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
 
     except DoesNotExist:
         return False, jsonify({'message': 'User not found'}), 404
@@ -542,212 +495,105 @@ def get_total_monthly_energy(user_id):
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
     
-
-def get_appliance_yearly_energy(user_id):
+# ______________________________________________________________________________________________________
+def get_appliance_yearly_energy(user_id, appliance_id):
     try:
-        # Get user
+        # Get user and appliance
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return make_response(jsonify({'message': 'User not found.'}), 404)
+        appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
 
-        # Get the current date
-        current_date = datetime.now()
+        if not user or not appliance:
+            message = 'User not found.' if not user else 'Appliance not found.'
+            return make_response(jsonify({'message': message}), 404)
 
-        # Extract the current year
-        current_year = current_date.year
-        current_month = current_date.month
 
+        start_date = CURRENT_YEAR_START_DATE - relativedelta(years=YEARS)
+
+
+        # Fetch energy documents for the current year data
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=start_date,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
         
-        # Initialize result list to store energy data for all appliances
-        all_appliances_result = []
-
-        # Loop through all appliances of the user
-        for appliance in user.appliances:
-            appliance_result=[]
-            
-            # Get appliance
-            if appliance.is_deleted:
-                continue
-            
-            # Calculate energy consumption values for the current year and the previous year
-            for year_offset in range(0, 4):
-                year_to_query = current_year - year_offset
-                months_data = []
-
-                
-                # Determine the loop range based on the year_offset
-                loop_range = range(1, current_month + 1) if year_offset == 0 else range(1, 13)
-                # Loop through each month
-                for month in loop_range:
-                    start_date = datetime(year_to_query, month, 1)
-                    _, last_day_of_month = calendar.monthrange(year_to_query, month)
-                    end_date = datetime(year_to_query, month, last_day_of_month)
-
-                    # Filter energy documents for the specified month and appliance
-                    energy_documents = Energy.objects(
-                        user=user_id,
-                        date__gte=start_date,
-                        date__lte=end_date
-                    ).order_by('date')
-
-                    # Initialize energy values for the month
-                    monthly_energy = []
-
-                    # Iterate over each day in the month
-                    for day in range(1, last_day_of_month + 1):
-                        date_to_query = datetime(year_to_query, month, day)
-
-                        # Check if it's the current date
-                        if date_to_query.date() == current_date.date() and year_offset == 0:
-                            energy_value = appliance.energy
-                        else:
-                            # Filter energy documents for the specified day and appliance
-                            energy_docs_for_day = [doc for doc in energy_documents if str(appliance._id) in doc and doc.date == date_to_query.date()]
-
-                            # Sum up the energy values for all matching documents
-                            energy_value = sum(abs(doc[str(appliance._id)]) for doc in energy_docs_for_day) if energy_docs_for_day else 0.0
-
-                        monthly_energy.append(energy_value)
-
-                    # Add monthly data to the list
-                    months_data.append({
-                        'title': calendar.month_name[month],
-                        'label': list(range(1, last_day_of_month + 1)),
-                        'energy': monthly_energy
-                    })
-
-                
-                
-                # Add yearly data to the list
-                appliance_result.append({
-                    'title': 'this year' if year_offset == 0 else f'{year_offset} {"year" if year_offset == 1 else "years"} ago',
-                    'label': [calendar.month_name[i] for i in range(1, current_month + 1)] if year_offset == 0 else [calendar.month_name[i] for i in range(1,13)],
-                    'energy': [sum(month['energy']) for month in months_data]
-                })
-
-            # Create a dictionary for the current appliance
-            appliance_data = {str(appliance._id): appliance_result}
-
-            # Append the appliance data to the result list
-            all_appliances_result.append(appliance_data)
+        # Create a dictionary to store energy values for each date
+        date_range = [start_date.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - start_date).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
 
 
-        return make_response(jsonify(all_appliances_result), 200)
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            date_str = energy_doc.date.strftime('%Y-%m-%d')
+            result[date_str] = abs(getattr(energy_doc, str(appliance._id), 0))
 
+        # CURRENT_DATE energy is taken from the appliance document
+        result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
+        print(result)
+        # Create the response data
+        response_data = {
+            'appliance_id': str(appliance._id),
+            'monthly_energy_data': convert_to_yearly_energy_format(result)
+        }
+
+        return make_response(jsonify(response_data), 200)
 
     except DoesNotExist:
-        return make_response(jsonify({'message': 'User not found'}), 404)
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
 
 
-def get_room_yearly_energy(user_id):
+def get_room_yearly_energy(user_id,room_id):
     try:
 
-        # Get the current date
-        current_date = datetime.now()
-
-        # Extract the current year
-        current_year = current_date.year
-        current_month = current_date.month
-        
-        # Get user 
+        # Get user and room
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return make_response(jsonify({'message': 'User not found.'}), 404)
-        
-        # Get room
-        rooms = Room.objects(user_id=user_id)
-        if not rooms:
-            return make_response(jsonify({'message': ' No Rooms found'}), 404)
+        room = Room.objects.get(id=room_id)
+        if not user or not room:
+            message = 'User not found.' if not room else 'Room not found.'
+            return make_response(jsonify({'message': message}), 404)
 
         
-        # Initialize result list to store energy data for all rooms
-        all_rooms_result = []
-
-        # Loop through all appliances of the user
-        for appliance in user.appliances:
-            appliance_result=[]
+        # Fetch energy documents for the current year data
         
-        for room in rooms:
-            room_result = []
-            # Filter out deleted appliances
-            appliances_in_room = [app for app in user.appliances if app._id in room.appliances and not app.is_deleted]
+        start_date = CURRENT_YEAR_START_DATE - relativedelta(years=YEARS)
+        
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=start_date,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
+
+        
+        # Create a dictionary to store energy values for each date
+        date_range = [start_date.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - start_date).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
+            
+            
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance_id in room.appliances:
+                date_str = energy_doc.date.strftime('%Y-%m-%d')
+                result[date_str] += abs(getattr(energy_doc, str(appliance_id), 0))
                 
-            for year_offset in range(0, 4):
-                year_to_query = current_year - year_offset
-                months_data = []
-
-                
-                # Determine the loop range based on the year_offset
-                loop_range = range(1, current_month + 1) if year_offset == 0 else range(1, 13)
-                # Loop through each month
-                for month in loop_range:
-                    start_date = datetime(year_to_query, month, 1)
-                    _, last_day_of_month = calendar.monthrange(year_to_query, month)
-                    end_date = datetime(year_to_query, month, last_day_of_month)
-
-                    # Filter energy documents for the specified month and appliance
-                    energy_documents = Energy.objects(
-                        user=user_id,
-                        date__gte=start_date,
-                        date__lte=end_date
-                    ).order_by('date')
-
-                    # Initialize energy values for the month
-                    monthly_energy = []
-
-                    # Iterate over each day in the month
-                    for day in range(1, last_day_of_month + 1):
-                        energy_value=0
-                        date_to_query = datetime(year_to_query, month, day)
-
-                        # Check if it's the current date
-                        if date_to_query.date() == current_date.date() and year_offset == 0:
-                            for appliance in appliances_in_room:
-                                energy_value += abs(appliance.energy)
-                        else:
-                            # Filter energy documents for the specified day and appliance
-                            energy_docs_for_day = [doc for doc in energy_documents if doc.date == date_to_query.date()]
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance_id in room.appliances:
+            appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
+            today_energy += appliance.energy
+        result[CURRENT_DATE.strftime('%Y-%m-%d')]=today_energy
 
 
-                            # If no energy document, append (0, 0)
-                            if not energy_docs_for_day:
-                                energy_value = 0.0
-                            else:
-                                for energy_doc in energy_docs_for_day:
-                                    for appliance in appliances_in_room:
-                                        if str(appliance._id) in energy_doc:
-                                            energy_value += abs(energy_doc[str(appliance._id)])
-                        monthly_energy.append(energy_value)
+        # Create the response data
+        response_data = {
+            'room_id': str(room.id),
+            'yearly_energy_data': convert_to_yearly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
 
-                    # Add monthly data to the list
-                    months_data.append({
-                        'title': calendar.month_name[month],
-                        'label': list(range(1, last_day_of_month + 1)),
-                        'energy': monthly_energy
-                    })
-                    
-
-                
-                
-                # Add yearly data to the list
-                room_result.append({
-                    'title': 'this year' if year_offset == 0 else f'{year_offset} {"year" if year_offset == 1 else "years"} ago',
-                    'label': [calendar.month_name[i] for i in range(1, current_month + 1)] if year_offset == 0 else [calendar.month_name[i] for i in range(1,13)],
-                    'energy': [sum(month['energy']) for month in months_data]
-                })
-
-            # Create a dictionary for the current appliance
-            room_data = {str(room.id): room_result}
-
-            # Append the appliance data to the result list
-            all_rooms_result.append(room_data)
-
-
-        return make_response(jsonify(all_rooms_result), 200)
 
 
     except DoesNotExist:
@@ -760,90 +606,51 @@ def get_room_yearly_energy(user_id):
 
 def get_total_yearly_energy(user_id):
     try:
-        # Get user
+        # Get user 
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return make_response(jsonify({'message': 'User not found.'}), 404)
-
+        
         # Filter out deleted appliances
         appliances = [app for app in user.appliances if not app.is_deleted]
+        
+        
+        # Fetch energy documents for the current year data
 
-        # Get the current date
-        current_date = datetime.now()
+        start_date = CURRENT_YEAR_START_DATE - relativedelta(years=YEARS)
+        
+        energy_docs = Energy.objects(
+            user=user_id,
+            date__gte=start_date,
+            date__lte=CURRENT_YEAR_END_DATE
+        ).order_by('date')
 
-        # Extract the current year
-        current_year = current_date.year
-        current_month = current_date.month
-
-        # Calculate energy consumption values for the current year and the previous year
-        yearly_data = []
-        for year_offset in range(0, 4):
-            year_to_query = current_year - year_offset
-            months_data = []
-
+        
+        # Create a dictionary to store energy values for each date
+        date_range = [start_date.date() + timedelta(days=i) for i in range((CURRENT_YEAR_END_DATE - start_date).days + 1)]
+        result = {date.strftime('%Y-%m-%d'): 0 for date in date_range}
             
-            # Determine the loop range based on the year_offset
-            loop_range = range(1, current_month + 1) if year_offset == 0 else range(1, 13)
-            # Loop through each month
-            for month in loop_range:
-                start_date = datetime(year_to_query, month, 1)
-                _, last_day_of_month = calendar.monthrange(year_to_query, month)
-                end_date = datetime(year_to_query, month, last_day_of_month)
-
-                # Filter energy documents for the specified month and appliance
-                energy_documents = Energy.objects(
-                    user=user_id,
-                    date__gte=start_date,
-                    date__lte=end_date
-                ).order_by('date')
-
-                # Initialize energy values for the month
-                monthly_energy = []
-
-                # Iterate over each day in the month
-                for day in range(1, last_day_of_month + 1):
-                    energy_value=0
-                    date_to_query = datetime(year_to_query, month, day)
-
-                    # Check if it's the current date
-                    if date_to_query.date() == current_date.date() and year_offset == 0:
-                        for appliance in appliances:
-                            energy_value += abs(appliance.energy)
-                    else:
-                        # Filter energy documents for the specified day and appliance
-                        energy_docs_for_day = [doc for doc in energy_documents if doc.date == date_to_query.date()]
-
-
-                        # If no energy document, append (0, 0)
-                        if not energy_docs_for_day:
-                            energy_value = 0.0
-                        else:
-                            for energy_doc in energy_docs_for_day:
-                                for appliance in appliances:
-                                    if str(appliance._id) in energy_doc:
-                                        energy_value += abs(energy_doc[str(appliance._id)])
-                                        
-                        monthly_energy.append(energy_value)
-
-                # Add monthly data to the list
-                months_data.append({
-                    'title': calendar.month_name[month],
-                    'label': list(range(1, last_day_of_month + 1)),
-                    'energy': monthly_energy
-                })
+            
+        # Populate the result dictionary with energy values
+        for energy_doc in energy_docs:
+            for appliance in appliances:
+                date_str = energy_doc.date.strftime('%Y-%m-%d')
+                result[date_str] += abs(getattr(energy_doc, str(appliance._id), 0))
                 
+        # CURRENT_DATE energy is taken from the appliance document
+        today_energy=0.0
+        for appliance in appliances:
+            appliance = next((app for app in user.appliances if str(app._id) == str(appliance._id) and not app.is_deleted), None)
+            today_energy += appliance.energy
+        result[CURRENT_DATE.strftime('%Y-%m-%d')]=today_energy
 
-            
-            
-            # Add yearly data to the list
-            yearly_data.append({
-                'title': 'this year' if year_offset == 0 else f'{year_offset} {"year" if year_offset == 1 else "years"} ago',
-                'label': [calendar.month_name[i] for i in range(1, current_month + 1)] if year_offset == 0 else [calendar.month_name[i] for i in range(1,13)],
-                'energy': [sum(month['energy']) for month in months_data]
-            })
 
-        return make_response(jsonify(yearly_data), 200)
-
+        # Create the response data
+        response_data = {
+            'yearly_energy_data': convert_to_monthly_energy_format(result)
+        }
+        return make_response(jsonify(response_data), 200)
+    
     except DoesNotExist:
         return make_response(jsonify({'message': 'User not found'}), 404)
 

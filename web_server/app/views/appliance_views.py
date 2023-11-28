@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from app.controllers.appliance_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -12,9 +12,9 @@ appliance_views = Blueprint('appliance_views', __name__)
 def add_appliance_route():
     user_id = get_jwt_identity()
     data = request.get_json()
-    name = data['name']
-    cloud_id = data['cloud_id']
-    type = data['type']
+    name = data.get('name')
+    cloud_id = data.get('cloud_id')
+    type = data.get('type')
     return add_appliance(user_id, name, cloud_id, type)
 
 @appliance_views.route('/appliance/<appliance_id>', methods=['GET'])
@@ -40,7 +40,7 @@ def delete_appliance_route(appliance_id):
 def update_appliance_name_route(appliance_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-    new_name = data['new_name']
+    new_name = data.get('new_name')
     return update_appliance_name(user_id, appliance_id, new_name)
 
 @appliance_views.route('/switch_appliance/<appliance_id>', methods=['PUT'])
@@ -48,7 +48,7 @@ def update_appliance_name_route(appliance_id):
 def switch_appliance_route(appliance_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-    status = data['status']
+    status = data.get('status')
     return switch_appliance(user_id, appliance_id, status)
 
 

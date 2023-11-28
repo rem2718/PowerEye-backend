@@ -1,10 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from app.controllers.room_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
 # Create a Blueprint to organize  routes
-room_views = Blueprint('room_views', __name__)
+room_views = Blueprint('    ', __name__)
 
 # Define routes using the imported functions
 @room_views.route('/create_room', methods=['POST'])
@@ -12,8 +12,8 @@ room_views = Blueprint('room_views', __name__)
 def create_room_route():
     user_id = get_jwt_identity()
     data = request.get_json()
-    name = data['name']
-    appliance_ids = data['appliance_ids']
+    name = data.get('name')
+    appliance_ids = data.get('appliance_ids')
     return create_room(user_id, name, appliance_ids)
 
 @room_views.route('/get_room_appliances/<room_id>', methods=['GET'])
@@ -27,14 +27,15 @@ def get_room_appliances_route(room_id):
 def switch_room_route(room_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-    new_status = data['new_status']
+    new_status = data.get('new_status')
     return switch_room(user_id, room_id, new_status)
 
 @room_views.route('/add_appliance_to_room/<room_id>', methods=['PUT'])
 @jwt_required()
 def add_appliances_to_room_route(room_id):
     user_id = get_jwt_identity()
-    appliance_ids = request.json.get('appliance_ids', [])
+    data = request.get_json()
+    appliance_ids = data.get('appliance_ids')
 
     return add_appliances_to_room(user_id, room_id, appliance_ids)
 
@@ -56,7 +57,7 @@ def delete_appliance_from_room_route(room_id, appliance_id):
 def update_room_name_route(room_id):
     user_id = get_jwt_identity()
     data = request.get_json()
-    new_name = data['new_name']
+    new_name = data.get('new_name')
     return update_room_name(user_id, room_id, new_name)
 
 @room_views.route('/delete_room/<room_id>', methods=['DELETE'])
