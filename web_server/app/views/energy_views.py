@@ -3,22 +3,24 @@ Module: energy_views
 
 This module defines Flask routes related to energy consumption.
 
-Each route corresponds to a specific functionality related to energy consumption readings,
-such as retrieving the daily, weekly, monthly, and yearly energy consumption for appliances, rooms, and the total.
+
+Each route handles functionality related to energy consumption readings, 
+including retrieving daily, weekly, monthly, and yearly energy consumption 
+for appliances, rooms, and the total.
 
 Routes:
-- GET /appliance_energy/daily/<appliance_id>: Retrieve the daily energy consumption for a specific appliance.
-- GET /room_energy/daily/<room_id>: Retrieve the daily energy consumption for a specific room.
-- GET /total_energy/daily: Retrieve the daily total energy consumption for the user.
-- GET /appliance_energy/weekly/<appliance_id>: Retrieve the weekly energy consumption for a specific appliance.
-- GET /appliance_energy/monthly/<appliance_id>: Retrieve the monthly energy consumption for a specific appliance.
-- GET /appliance_energy/yearly/<appliance_id>: Retrieve the yearly energy consumption for a specific appliance.
-- GET /room_energy/weekly/<room_id>: Retrieve the weekly energy consumption for a specific room.
-- GET /room_energy/monthly/<room_id>: Retrieve the monthly energy consumption for a specific room.
-- GET /room_energy/yearly/<room_id>: Retrieve the yearly energy consumption for a specific room.
-- GET /total_energy/weekly: Retrieve the weekly total energy consumption for the user.
-- GET /total_energy/monthly: Retrieve the monthly total energy consumption for the user.
-- GET /total_energy/yearly: Retrieve the yearly total energy consumption for the user.
+- GET /appliance_energy/daily/<appliance_id>: Get the daily energy consumption for an appliance.
+- GET /room_energy/daily/<room_id>: Get the daily energy consumption for a room.
+- GET /total_energy/daily: Get the daily total energy consumption.
+- GET /appliance_energy/weekly/<appliance_id>: Get the weekly energy consumption for an appliance.
+- GET /appliance_energy/monthly/<appliance_id>: Get the monthly energy consumption for an appliance.
+- GET /appliance_energy/yearly/<appliance_id>: Get the yearly energy consumption for an appliance.
+- GET /room_energy/weekly/<room_id>: Get the weekly energy consumption for a  room.
+- GET /room_energy/monthly/<room_id>: Get the monthly energy consumption for a room.
+- GET /room_energy/yearly/<room_id>: Get the yearly energy consumption for a room.
+- GET /total_energy/weekly: Get the weekly total energy consumption.
+- GET /total_energy/monthly: Get the monthly total energy consumption.
+- GET /total_energy/yearly: Get the yearly total energy consumption.
 
 Parameters:
 - appliance_id (str): The ID of the appliance.
@@ -28,15 +30,26 @@ Returns:
 JSON: The energy consumption data for the specified appliance, room, or the total.
 """
 from flask import Blueprint
-from app.controllers.energy_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
-
+from app.controllers.energy_controller import (
+    get_appliance_daily_energy,
+    get_room_daily_energy,
+    get_total_daily_energy,
+    get_appliance_weekly_energy,
+    get_appliance_monthly_energy,
+    get_appliance_yearly_energy,
+    get_room_weekly_energy,
+    get_room_monthly_energy,
+    get_room_yearly_energy,
+    get_total_weekly_energy,
+    get_total_monthly_energy,
+    get_total_yearly_energy,
+)
 
 # Create a Blueprint to organize routes
 energy_views = Blueprint('energy_views', __name__)
 
-
-@energy_views.route('/appliance_energy/daily/<appliance_id>', methods=['GET']) 
+@energy_views.route('/appliance_energy/daily/<appliance_id>', methods=['GET'])
 @jwt_required()
 def appliance_daily_energy_route(appliance_id):
     """
@@ -51,8 +64,7 @@ def appliance_daily_energy_route(appliance_id):
     user_id = get_jwt_identity()
     return get_appliance_daily_energy(user_id,appliance_id)
 
-
-@energy_views.route('/room_energy/daily/<room_id>', methods=['GET']) 
+@energy_views.route('/room_energy/daily/<room_id>', methods=['GET'])
 @jwt_required()
 def room_daily_energy_route(room_id):
     """
@@ -67,8 +79,7 @@ def room_daily_energy_route(room_id):
     user_id = get_jwt_identity()
     return get_room_daily_energy(user_id,room_id)
 
-
-@energy_views.route('/total_energy/daily', methods=['GET']) 
+@energy_views.route('/total_energy/daily', methods=['GET'])
 @jwt_required()
 def total_daily_energy_route():
     """
@@ -79,10 +90,9 @@ def total_daily_energy_route():
     """
     user_id = get_jwt_identity()
     return get_total_daily_energy(user_id)
-
 # __________________________________________________________________
 
-@energy_views.route('/appliance_energy/weekly/<appliance_id>', methods=['GET']) 
+@energy_views.route('/appliance_energy/weekly/<appliance_id>', methods=['GET'])
 @jwt_required()
 def appliance_weekly_energy_route(appliance_id):
     """
@@ -97,7 +107,7 @@ def appliance_weekly_energy_route(appliance_id):
     user_id = get_jwt_identity()
     return get_appliance_weekly_energy(user_id,appliance_id)
 
-@energy_views.route('/appliance_energy/monthly/<appliance_id>', methods=['GET']) 
+@energy_views.route('/appliance_energy/monthly/<appliance_id>', methods=['GET'])
 @jwt_required()
 def appliance_monthly_energy_route(appliance_id):
     """
@@ -112,8 +122,7 @@ def appliance_monthly_energy_route(appliance_id):
     user_id = get_jwt_identity()
     return get_appliance_monthly_energy(user_id,appliance_id)
 
-
-@energy_views.route('/appliance_energy/yearly/<appliance_id>', methods=['GET']) 
+@energy_views.route('/appliance_energy/yearly/<appliance_id>', methods=['GET'])
 @jwt_required()
 def appliance_yearly_energy_route(appliance_id):
     """
@@ -127,10 +136,9 @@ def appliance_yearly_energy_route(appliance_id):
     """
     user_id = get_jwt_identity()
     return get_appliance_yearly_energy(user_id,appliance_id)
+# _____________________________________________________________
 
-# ______________________________________________________________
-
-@energy_views.route('/room_energy/weekly/<room_id>', methods=['GET']) 
+@energy_views.route('/room_energy/weekly/<room_id>', methods=['GET'])
 @jwt_required()
 def room_weekly_energy_route(room_id):
     """
@@ -145,7 +153,7 @@ def room_weekly_energy_route(room_id):
     user_id = get_jwt_identity()
     return get_room_weekly_energy(user_id,room_id)
 
-@energy_views.route('/room_energy/monthly/<room_id>', methods=['GET']) 
+@energy_views.route('/room_energy/monthly/<room_id>', methods=['GET'])
 @jwt_required()
 def room_monthly_energy_route(room_id):
     """
@@ -160,9 +168,7 @@ def room_monthly_energy_route(room_id):
     user_id = get_jwt_identity()
     return get_room_monthly_energy(user_id,room_id)
 
-
-
-@energy_views.route('/room_energy/yearly/<room_id>', methods=['GET']) 
+@energy_views.route('/room_energy/yearly/<room_id>', methods=['GET'])
 @jwt_required()
 def room_yearly_energy_route(room_id):
     """
@@ -176,10 +182,9 @@ def room_yearly_energy_route(room_id):
     """
     user_id = get_jwt_identity()
     return get_room_yearly_energy(user_id,room_id)
-
 # _______________________________________________________________
 
-@energy_views.route('/total_energy/weekly', methods=['GET']) 
+@energy_views.route('/total_energy/weekly', methods=['GET'])
 @jwt_required()
 def total_weekly_energy_route():
     """
@@ -191,26 +196,21 @@ def total_weekly_energy_route():
     user_id = get_jwt_identity()
     return get_total_weekly_energy(user_id)
 
-
-@energy_views.route('/total_energy/monthly', methods=['GET']) 
+@energy_views.route('/total_energy/monthly', methods=['GET'])
 @jwt_required()
 def total_monthly_energy_route():
     """
     Endpoint to retrieve the monthly total energy consumption for the user.
-
     Returns:
     JSON: The monthly total energy consumption for the user.
     """
     user_id = get_jwt_identity()
     return get_total_monthly_energy(user_id)
 
-
-@energy_views.route('/total_energy/yearly', methods=['GET']) 
-@jwt_required()
+@energy_views.route('/total_energy/yearly', methods=['GET'])
 def total_yearly_energy_route():
     """
     Endpoint to retrieve the yearly total energy consumption for the user.
-
     Returns:
     JSON: The yearly total energy consumption for the user.
     """

@@ -22,8 +22,16 @@ The request and response formats for each route are documented in the respective
 
 
 from flask import Blueprint, request
-from app.controllers.appliance_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.controllers.appliance_controller import (
+    add_appliance,
+    get_appliance_by_id,
+    get_all_appliances,
+    delete_appliance,
+    update_appliance_name,
+    switch_appliance,
+    get_smartplugs,
+)
 
 
 # Create a Blueprint to organize  routes

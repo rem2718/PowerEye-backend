@@ -1,21 +1,23 @@
-import os
-from app.extensions import db
-from .appliance_model import Appliance  # Import the Appliance model
-from .notified_device_model import Notified_Device # Import the Notified_Device model
-import jwt
+# user_model.py
+"""
+Module defining the User model.
+
+This module defines the User model as a Flask-MongoEngine document.
+"""
 from datetime import datetime, timedelta
-from mongoengine import EmbeddedDocumentField
-from flask_bcrypt import Bcrypt
-bcrypt = Bcrypt()
-from app.utils.enums import PlugType
+import jwt
 from dotenv import load_dotenv
-load_dotenv()
+from flask_bcrypt import Bcrypt
+from mongoengine import EmbeddedDocumentField
+from app.extensions import db
 from app.config import Config
-from bson import ObjectId
+from app.utils.enums import PlugType
+from .appliance_model import Appliance
+from .notified_device_model import NotifiedDevice
 
+bcrypt = Bcrypt()
 
-
-
+load_dotenv()
 
 class User(db.Document):
     email = db.EmailField(required=True)
@@ -27,9 +29,9 @@ class User(db.Document):
     cloud_password = db.StringField(required=True)
     current_month_energy = db.FloatField(default=0.0)
     energy_goal = db.FloatField(default=-1.0)
-    notified_devices = db.ListField(EmbeddedDocumentField(Notified_Device),required=False,default=[])
-    # profile_pic is saved in the server 
-    
+    notified_devices = db.ListField(EmbeddedDocumentField(NotifiedDevice),required=False,default=[])
+    # profile_pic is saved in the server
+
     meta = {
         'collection': 'Users'  # the real collection name here
     }
@@ -37,7 +39,7 @@ class User(db.Document):
     # Add any additional methods or properties as needed
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
-    
+
     def generate_token(self):
         payload = {
             'sub': str(self.id),

@@ -27,7 +27,20 @@ The request and response formats for each route are documented in the respective
 
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.controllers.user_controller import *
+from app.controllers.user_controller import (
+    signup,
+    login,
+    logout,
+    get_user_info,
+    update_user_info,
+    delete_user,
+    get_goal,
+    set_goal,
+    delete_goal,
+    upload_profile_pic,
+    get_profile_pic,
+    set_fcm_token,
+)
 
 
 # Create a Blueprint to organize routes

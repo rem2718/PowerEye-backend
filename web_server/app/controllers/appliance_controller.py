@@ -55,7 +55,7 @@ def validate_name(user, name, current_appliance_id=None):
 
             if not appliance.is_deleted and appliance.name == name:
                 return False, jsonify({'message': 'Name must be unique among all active appliances in your account'}), 400
-        
+
         # Return True if the name is valid and unique
         return True, None, None
 
@@ -73,7 +73,7 @@ def validate_cloud_id(user, cloud_id):
         if not user:
             return False, jsonify({'message': 'User not found'}), 404
 
-        # Validate cloud_id 
+        # Validate cloud_id
         if not cloud_id or not isinstance(cloud_id, str):
             return False, jsonify({'message': 'Invalid cloud_id'}), 400
 
@@ -86,9 +86,9 @@ def validate_cloud_id(user, cloud_id):
         for appliance in user.appliances:
             if not appliance.is_deleted and appliance.cloud_id == cloud_id:
                 return False, jsonify({'message': 'Smart plug is already in use'}), 400
-            
+
         return True, None, None
-    
+
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
 
@@ -102,12 +102,12 @@ def add_appliance(user_id, name, cloud_id, type):
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return jsonify({'message': 'User not found.'}), 404
-        
+
         # Validate name
         is_valid_name, error_response, status_code = validate_name(user,name)
         if not is_valid_name:
             return error_response, status_code
-        
+
         # Validate cloud_id using the new function
         is_valid_cloud_id, error_response, status_code = validate_cloud_id(user, cloud_id)
         if not is_valid_cloud_id:
@@ -119,7 +119,7 @@ def add_appliance(user_id, name, cloud_id, type):
 
         e_type = map_appliance_type_to_e_type(type)
 
-        
+
         # Generate a unique ID for the appliance
 
         appliance_id = str(ObjectId())
@@ -136,7 +136,7 @@ def add_appliance(user_id, name, cloud_id, type):
         user.save()
 
         return jsonify({'message': f'Appliance {name} added successfully', 'appliance_id': appliance_id}), 201
-    
+
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
 
@@ -172,10 +172,10 @@ def get_appliance_by_id(user_id, appliance_id):
         }
 
         return jsonify(appliance_data), 200
-    
+
     except DoesNotExist:
         return jsonify({'message': 'User not found'}), 404
-    
+
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while retrieving appliance: {str(e)}'}), 500
@@ -230,8 +230,7 @@ def delete_appliance(user_id, appliance_id):
         # Soft delete the appliance by marking it as deleted
         appliance.is_deleted = True
         user.save()
-        
-        
+
         # Check if the appliance is associated with any rooms
         rooms_with_appliance = Room.objects(appliances=appliance_id)
         if not rooms_with_appliance:

@@ -2,7 +2,7 @@
 from flask import jsonify ,request ,send_file
 from app.models.user_model import User
 from app.models.room_model import Room
-from app.models.notified_device_model import Notified_Device # Import the Notified_Device model
+from app.models.notified_device_model import NotifiedDevice 
 from app.utils.enums import PlugType
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt()
@@ -39,6 +39,26 @@ def validate_password(password):
         return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
     
 
+
+def file_to_base64(file_path):
+    try:
+        with open(file_path, 'rb') as file:
+            _, file_extension = os.path.splitext(file_path)
+            file_extension = file_extension[1:]
+            prefix = f"data:image/{file_extension.lower()};base64,"
+            # Read the file content
+            file_content = file.read()
+
+            # Encode the file content to base64
+            base64_encoded = base64.b64encode(file_content).decode('utf-8')
+
+            return prefix + base64_encoded
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        return None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 def signup(email, power_eye_password, cloud_password):
     try:
@@ -323,7 +343,6 @@ def get_profile_pic(user_id):
         for extension in ALLOWED_EXTENSIONS:
             filename = f'{user_id}.{extension}'
             file_path = os.path.join(UPLOADS_FOLDER, filename)
-            if os.path.exists(file_path):
                 # Guess the mimetype of the file based on the file path
                 mimetype, _ = mimetypes.guess_type(file_path)
                 if mimetype:
@@ -354,7 +373,7 @@ def set_fcm_token(user_id, device_id, fcm_token):
             notified_device.fcm_token = fcm_token
         else:
             # Create a new Notified_Device and append it to the user's notified_devices list
-            new_device = Notified_Device(device_id=device_id, fcm_token=fcm_token)
+            new_device = NotifiedDevice(device_id=device_id, fcm_token=fcm_token)
             user.notified_devices.append(new_device)
 
         # Save the user document with the updated/added notified_devices

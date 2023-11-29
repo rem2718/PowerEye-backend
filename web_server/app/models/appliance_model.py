@@ -1,7 +1,11 @@
 # appliance_model.py
+"""
+Module defining the Appliance model.
+
+This module defines the Appliance model as a Flask-MongoEngine embedded document.
+"""
 from app.extensions import db
 from app.utils.enums import ApplianceType, EType
-from bson import ObjectId
 
 
 class Appliance(db.EmbeddedDocument):

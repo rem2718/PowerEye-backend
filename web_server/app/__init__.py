@@ -1,6 +1,15 @@
 # web_server\app\__init__.py
+"""
+Initialize and configure the Flask application.
+
+This module creates a Flask application, 
+loads configuration based on the environment, and initializes various extensions. 
+It also registers blueprints for different views.
+
+"""
 import os
 from flask import Flask
+from dotenv import load_dotenv
 from .extensions import db, bcrypt, jwt
 from .views.appliance_views import appliance_views
 from .views.room_views import room_views
@@ -9,7 +18,6 @@ from .views.power_views import power_views
 from .views.energy_views import energy_views
 from .config import Config
 
-from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,7 +30,7 @@ def create_app():
     #     from .config_testing import TestConfig as Config
     # else:
     #     from .config import Config
-    app.secret_key = os.getenv('SECRET_KEY')    
+    app.secret_key = os.getenv('SECRET_KEY')
     app.config.from_object(Config)
 
     # Initialize extensions
@@ -42,5 +50,3 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run()
-
-

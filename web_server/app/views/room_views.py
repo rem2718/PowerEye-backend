@@ -22,12 +22,23 @@ Request and Response Formats:
 The request and response formats for each route are documented in the respective route's docstring.
 """
 from flask import Blueprint, request
-from app.controllers.room_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.controllers.room_controller import (
+    create_room,
+    get_room_appliances,
+    switch_room,
+    add_appliances_to_room,
+    get_all_user_rooms,
+    delete_appliance_from_room,
+    update_room_name,
+    delete_room,
+)
 
 
-# Create a Blueprint to organize  routes
-room_views = Blueprint('    ', __name__)
+
+
+# Create a Blueprint to organize routes
+room_views = Blueprint('room_views', __name__)
 
 # Define routes using the imported functions
 @room_views.route('/create_room', methods=['POST'])

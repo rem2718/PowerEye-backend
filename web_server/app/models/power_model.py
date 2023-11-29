@@ -1,6 +1,12 @@
 # power_model.py
-from app.extensions import db 
-from .user_model import User  # Import the User model
+"""
+Module defining the Power model.
+
+This module defines the Power model as a Flask-MongoEngine dynamic document
+"""
+from app.extensions import db
+from .user_model import User
+
 
 class Power(db.DynamicDocument):
     timestamp = db.DateTimeField(required=True)
@@ -8,9 +14,8 @@ class Power(db.DynamicDocument):
     # Appliance ID will be used as a field name directly
 
     meta = {
-        'collection': 'Powers'  # the real collection name here
-    }    
-
-    def save(self, *args, **kwargs):
-        # Prevent saving by raising an exception
-        raise ReadOnlyDocumentError("This document is read-only and cannot be modified.")
+        'collection': 'Powers',  # the real collection name here
+        'indexes': [
+            {'fields': ['user', 'timestamp']},
+        ],
+    }

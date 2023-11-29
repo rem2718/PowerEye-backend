@@ -1,11 +1,19 @@
+"""
+enums.py - Enumeration definitions for appliance and smart plug types.
+
+This module defines several Enum classes to represent different types of 
+energies, appliances and smart plug connections.
+"""
 from enum import Enum
-    
+
 class EType(Enum):
+    """Enumeration representing types of Energy types of appliances."""
     NONE = 1
     SHIFTABLE = 2
     PHANTOM = 3
 
 class ApplianceType(Enum):
+    """Enumeration representing types of appliances."""
     COOLER = 1
     LIGHTING = 2
     HEATER = 3
@@ -25,11 +33,8 @@ class ApplianceType(Enum):
     CHARGER = 17
     RECEIVER = 18
     SPORTS_MACHINE = 19
-    
-
-
-
 
 class PlugType(Enum):
+    """Enumeration representing types of smart plug connections."""
     MEROSS = 1
     TUYA = 2

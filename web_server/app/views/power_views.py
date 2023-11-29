@@ -7,11 +7,13 @@ Each route corresponds to a specific functionality related to power consumption 
 such as retrieving the most recent power reading for a specific appliance.
 
 Routes:
-- GET /get_most_recent_reading/<appliance_id>: Retrieve the most recent power reading for a specific appliance.
+- GET /get_most_recent_reading/<appliance_id>: Get the most recent power reading for an appliance.
 """
 from flask import Blueprint
-from app.controllers.power_controller import *
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.controllers.power_controller import get_most_recent_reading
+
+
 
 
 # Create a Blueprint to organize  routes
