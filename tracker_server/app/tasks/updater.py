@@ -44,8 +44,7 @@ class Updater(Task):
     def _powers(self):
         query = {"user": ObjectId(self.user_id)}
         projection = {"user": 0, "_id": 0}
-        sort = [("timestamp", 1)]
-        data = self.db.get_docs("Powers", query, projection, sort)
+        data = self.db.get_docs("Powers", query, projection)
         data = list(data)
         if len(data):
             powers = pd.DataFrame(data)
@@ -53,6 +52,7 @@ class Updater(Task):
             powers["timestamp"] = powers["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
             )
+            powers = powers.sort_values(by=["timestamp"])
             powers = powers.set_index("timestamp")
             return powers
         else:
@@ -158,7 +158,7 @@ class Updater(Task):
         self.db.insert_doc("Energys", yesterday_energys)
         self.logger.critical(f"energy: {self.date} -> done")
         self.date += self.day
-        
+
         day = datetime.now().weekday()
         if day == 6:
             powers = self._powers()
@@ -167,5 +167,3 @@ class Updater(Task):
                     app_id = str(app["_id"])
                     self._apply_cluster(app_id, app["e_type"], powers[app_id])
                     self._apply_forecast(app_id, powers[app_id])
-
-        
