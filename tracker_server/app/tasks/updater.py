@@ -42,6 +42,11 @@ class Updater(Task):
         self.logger = logging.getLogger(__name__)
 
     def _powers(self):
+        """
+        Get recent power consumption data for shiftable appliances.
+        Returns:
+            DataFrame: A DataFrame for appliances' power consumption data.
+        """
         query = {"user": ObjectId(self.user_id)}
         projection = {"user": 0, "_id": 0}
         data = self.db.get_docs("Powers", query, projection)
