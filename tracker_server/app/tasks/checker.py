@@ -110,12 +110,10 @@ class Checker(Task):
             },
         }
         projection = {"_id": 0, "user": 0}
-        sort = [("timestamp", 1)]
         data = self.db.get_docs(
             "Powers",
             query,
             projection=projection,
-            sort=sort,
         )
         data = list(data)
         if len(data):
@@ -124,6 +122,7 @@ class Checker(Task):
             powers["timestamp"] = powers["timestamp"].apply(
                 lambda x: x.replace(second=0, microsecond=0)
             )
+            powers = powers.sort_values(by=['timestamp'])
             powers = powers.set_index("timestamp")
             return powers
         else:
