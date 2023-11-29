@@ -22,8 +22,7 @@ def create_app():
     #     from .config_testing import TestConfig as Config
     # else:
     #     from .config import Config
-    app.secret_key = os.getenv('SECRET_KEY')
-    
+    app.secret_key = os.getenv('SECRET_KEY')    
     app.config.from_object(Config)
 
     # Initialize extensions
@@ -32,7 +31,6 @@ def create_app():
     jwt.init_app(app)
 
     # Register blueprints
-    
     app.register_blueprint(appliance_views)
     app.register_blueprint(room_views)
     app.register_blueprint(power_views)

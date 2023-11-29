@@ -339,7 +339,7 @@ def get_profile_pic(user_id):
     
 
 
-def set_FCM_token(user_id, device_id, fcm_token):
+def set_fcm_token(user_id, device_id, fcm_token):
     try:
         # Retrieve the user by ID and make sure they are not deleted
         user = User.objects.get(id=user_id, is_deleted=False)

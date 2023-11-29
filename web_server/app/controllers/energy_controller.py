@@ -102,8 +102,6 @@ def convert_to_monthly_energy_format(data):
 
     return monthly_data
 
-
-
 def convert_to_yearly_energy_format(data):
     current_year = datetime.now().year
     monthly_data = [[0] * 12 for _ in range(current_year - min(map(lambda x: int(x[:4]), data.keys())) + 1)]
@@ -128,9 +126,6 @@ def convert_to_yearly_energy_format(data):
     ]
 
     return yearly_data
-            
-    
-
 
 # _____________________________________________________________________________________________________________________________________
 
