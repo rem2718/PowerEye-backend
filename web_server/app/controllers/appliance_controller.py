@@ -1,5 +1,5 @@
 # app\controllers\appliance_controller.py
-from flask import jsonify
+from flask import jsonify,make_response
 from app.models.appliance_model import Appliance
 from app.utils.enums import ApplianceType
 from app.utils.enums import EType
@@ -49,14 +49,19 @@ def validate_name(user_id, name, current_appliance_id=None):
             return False, jsonify({'message': 'Name should be a string with 2 or more characters'}), 400
 
         # Check if the name is unique among active appliances in the user's account
-        # Check if the name is unique among active appliances in the user's account
         for appliance in user.appliances:
+            print(appliance._id)
             # Exclude the current appliance being updated (if provided)
             if current_appliance_id and str(appliance._id) == current_appliance_id:
                 continue
 
-            if not appliance.is_deleted and appliance.name == name:
+            if appliance.name == name:
+                # Check if the existing appliance is deleted
+                if appliance.is_deleted:
+                    # If the appliance is deleted, the name is considered unique
+                    continue
                 return False, jsonify({'message': 'Name must be unique among all active appliances in your account'}), 400
+
 
         # Return True if the name is valid and unique
         return True, None, None
@@ -97,12 +102,8 @@ def validate_cloud_id(user_id, cloud_id):
             print('in smartplug_ids loop')
 
         if cloud_id not in smartplug_ids:
-            return False, jsonify({'message': 'Invalid cloud_id'}), 400
+            return False, jsonify({'message': 'Invalid cloud_id, or the plug is already in use'}), 400
 
-        # Validate if the smart plug is not already in use
-        for appliance in user.appliances:
-            if not appliance.is_deleted and appliance.cloud_id == cloud_id:
-                return False, jsonify({'message': 'Smart plug is already in use'}), 400
 
         return True, None, None
 
@@ -234,16 +235,16 @@ def delete_appliance(user_id, appliance_id):
     from app.controllers.room_controller import delete_appliance_from_room
 
     try:
-        # Retrieve the user by ID and make sure they are not deleted
+        
+        # Get user and appliance
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
-            return jsonify({'message': 'User not found.'}), 404
+        for x in user.appliances:
+            print(str(x._id))
+        appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
 
-        # Find the appliance within the user's appliances
-        appliance = next((app for app in user.appliances if str(app._id) == appliance_id), None)
-
-        if not appliance or appliance.is_deleted:
-            return jsonify({'message': 'Appliance not found'}), 404
+        if not user or not appliance:
+            message = 'User not found.' if not user else 'Appliance not found.'
+            return make_response(jsonify({'message': message}), 404)
 
 
         # Soft delete the appliance by marking it as deleted
@@ -261,7 +262,7 @@ def delete_appliance(user_id, appliance_id):
 
         return jsonify({'message': 'Appliance deleted successfully'}), 200
     except DoesNotExist:
-            return jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
     except Exception as e:
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while deleting appliance: {str(e)}'}), 500
