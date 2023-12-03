@@ -37,10 +37,12 @@ def map_appliance_type_to_e_type(appliance_type):
     return appliance_type_to_e_type.get(appliance_type)
 
 # Helper function to validate appliance name
-def validate_name(user, name, current_appliance_id=None):
+def validate_name(user_id, name, current_appliance_id=None):
     try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return False, jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Check if name is a string and has 2 or more characters
         if not isinstance(name, str) or len(name) < 2:
@@ -67,19 +69,34 @@ def validate_name(user, name, current_appliance_id=None):
         return False, jsonify({'message': f'Error occurred while validating name: {str(e)}'}), 500
 
 # Helper function to validate plug id
-def validate_cloud_id(user, cloud_id):
+def validate_cloud_id(user_id, cloud_id):
     '''validating the smart plug id (cloud could be Meross or Tuya)'''
     try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
-            return False, jsonify({'message': 'User not found'}), 404
+            return jsonify({'message': 'User not found.'}), 404
 
         # Validate cloud_id
         if not cloud_id or not isinstance(cloud_id, str):
             return False, jsonify({'message': 'Invalid cloud_id'}), 400
-
+        
         # Validate if the provided cloud_id belongs to the user's smart plugs
-        user_cloud_ids = get_smartplugs(user)
-        if cloud_id not in user_cloud_ids:
+        smartplugs_result = get_smartplugs(user_id)
+
+        # Check if the response indicates an error
+        if len(smartplugs_result) < 2 or smartplugs_result[1] != 200:
+            return False, jsonify({'message': 'Error retrieving smart plugs'}), 500
+
+        user_smartplugs = smartplugs_result[0].get_json().get("Smart Plugs", [])
+        # Extracting the list of ids from user_smartplugs
+        smartplug_ids = [smartplug['id'] for smartplug in user_smartplugs]
+
+        for x in smartplug_ids:
+            print(x)
+            print('in smartplug_ids loop')
+
+        if cloud_id not in smartplug_ids:
             return False, jsonify({'message': 'Invalid cloud_id'}), 400
 
         # Validate if the smart plug is not already in use
@@ -96,6 +113,7 @@ def validate_cloud_id(user, cloud_id):
         traceback.print_exc()
         return jsonify({'message': f'Error occurred while validating cloud ID: {str(e)}'}), 500
 
+
 def add_appliance(user_id, name, cloud_id, type):
     try:
         # Retrieve the user by ID and make sure they are not deleted
@@ -104,15 +122,16 @@ def add_appliance(user_id, name, cloud_id, type):
             return jsonify({'message': 'User not found.'}), 404
 
         # Validate name
-        is_valid_name, error_response, status_code = validate_name(user,name)
+        is_valid_name, error_response, status_code = validate_name(user_id,name)
         if not is_valid_name:
             return error_response, status_code
 
-        # Validate cloud_id using the new function
-        is_valid_cloud_id, error_response, status_code = validate_cloud_id(user, cloud_id)
+        # Validate cloud_id
+        is_valid_cloud_id, error_response, status_code = validate_cloud_id(user_id, cloud_id)
         if not is_valid_cloud_id:
             return error_response, status_code
 
+        
         # Validate type
         if type not in [t.value for t in ApplianceType]:
             return jsonify({'message': 'Invalid appliance type'}), 400
@@ -262,7 +281,7 @@ def update_appliance_name(user_id, appliance_id, new_name):
 
 
         # Validate name
-        is_valid_name, error_response, status_code = validate_name(user, new_name, current_appliance_id=appliance_id)
+        is_valid_name, error_response, status_code = validate_name(user_id, new_name, current_appliance_id=appliance_id)
         if not is_valid_name:
             return error_response, status_code
 
@@ -290,12 +309,10 @@ def switch_appliance(user_id, appliance_id, status):
         if not appliance or appliance.is_deleted:
             return jsonify({'message': 'Appliance not found'}), 404
 
-        # Validate cloud_id using the new function
-        is_valid_cloud_id, error_response, status_code = validate_cloud_id(user, appliance.cloud_id)
-        if not is_valid_cloud_id:
-            return error_response, status_code
         # Retrieve the cloud ID of the appliance
         cloud_id = appliance.cloud_id
+        
+        
         
         status = bool(status)
         # Check if the status is a valid value 
@@ -328,21 +345,20 @@ def get_smartplugs(user_id):
         user = User.objects.get(id=user_id, is_deleted=False)
         if not user:
             return jsonify({'message': 'User not found.'}), 404
+
         # Get a list of all `cloud_id` values from the user's appliances
         plugged_cloud_ids = [app.cloud_id for app in user.appliances if app.cloud_id and not app.is_deleted]
 
-
-        
-        cloud_user = {'id':user.id, 'email': user.email, 'password': user.cloud_password, 'dev1': 'bf16e0689159efb9c5xibt'}  # Create user object
+        cloud_user = {'id': user.id, 'email': user.email, 'password': user.cloud_password, 'dev1': 'bf16e0689159efb9c5xibt'}  # Create user object
         plug_type = user.cloud_type
-        
-        smart_plugs, error_message,status_code=cloud.get_smartplugs(plug_type,cloud_user)
+
+        smart_plugs, error_message, status_code = cloud.get_smartplugs(plug_type, cloud_user)
         if not smart_plugs:
-            return error_message, status_code
-        
+            return jsonify(error_message), status_code
+
         # Filter the smart plugs based on existing cloud IDs
-        filtered_smart_plugs = [plug for plug in smart_plugs if plug['id'] not in plugged_cloud_ids]
-        
+        filtered_smart_plugs = [plug for plug in smart_plugs if plug.get('id') not in plugged_cloud_ids]
+
         return jsonify({'Smart Plugs': filtered_smart_plugs}), 200
 
     except DoesNotExist:
