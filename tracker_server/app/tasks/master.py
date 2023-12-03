@@ -35,8 +35,6 @@ class Master(Task):
         self.fcm = fcm
         self.scheduler = additional
         self.logger = logging.getLogger(__name__)
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
 
     def _create_tasks(self, id, data):
         """
@@ -45,7 +43,7 @@ class Master(Task):
             id (str): User idintifier.
             data (dict): User information.
         """
-        plug_controller = PlugController(self.loop, data)
+        plug_controller = PlugController(data)
         collector_job = Collector(id, self.db, self.fcm, plug_controller)
         checker_job = Checker(id, self.db, self.fcm)
         updater_job = Updater(id, self.db)
@@ -90,7 +88,7 @@ class Master(Task):
 
         for user in users:
             id = str(user["_id"])
-            if not self.scheduler.get_job(f"checker_{id}") and not user["is_deleted"]:
+            if not self.scheduler.get_job(f"collector_{id}") and not user["is_deleted"]:
                 if len(user["appliances"]):
                     data = {
                         "email": user["email"],
