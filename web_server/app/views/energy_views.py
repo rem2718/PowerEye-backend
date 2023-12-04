@@ -208,6 +208,7 @@ def total_monthly_energy_route():
     return get_total_monthly_energy(user_id)
 
 @energy_views.route('/total_energy/yearly', methods=['GET'])
+@jwt_required()
 def total_yearly_energy_route():
     """
     Endpoint to retrieve the yearly total energy consumption for the user.
