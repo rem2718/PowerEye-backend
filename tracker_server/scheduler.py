@@ -25,6 +25,7 @@ from app.external_dependencies.mongo import Mongo
 from app.external_dependencies.fcm import FCM
 from app.tasks.master import Master
 
+
 class Scheduler:
     """
     A scheduler for managing tasks in the tracker server.
@@ -52,8 +53,8 @@ class Scheduler:
             "default": ThreadPoolExecutor(num_cores),
         }
         job_defaults = {
-            "coalesce": False,
-            "max_instances": 1,
+            "coalesce": True,
+            "max_instances": 3,
         }
         self.scheduler = BlockingScheduler(job_defaults, executors=executors)
 
