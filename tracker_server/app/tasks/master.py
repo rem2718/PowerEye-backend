@@ -54,6 +54,7 @@ class Master(Task):
             name=f"collector_{id}",
             trigger="interval",
             minutes=1,
+            max_instances=5,
         )
         self.scheduler.add_job(
             checker_job.run,
@@ -61,6 +62,7 @@ class Master(Task):
             name=f"checker_{id}",
             trigger="interval",
             minutes=1,
+            max_instances=5,
         )
         self.scheduler.add_job(
             updater_job.run,
@@ -70,6 +72,7 @@ class Master(Task):
             hour=0,
             minute=0,
             second=0,
+            max_instances=5,
         )
 
     def run(self):
