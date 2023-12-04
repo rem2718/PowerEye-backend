@@ -128,9 +128,9 @@ def update_user_info_route():
     """
     user_id = get_jwt_identity()
     data = request.get_json()
-    meross_password = data.get('meross_password')
-    power_eye_password = data.get('power_eye_password')
-    username = data.get('username')
+    meross_password = data.get('meross_password', None)
+    power_eye_password = data.get('power_eye_password', None)
+    username = data.get('username', None)
     return update_user_info(user_id, meross_password, power_eye_password, username)
 
 @user_views.route('/user', methods=['DELETE'])
