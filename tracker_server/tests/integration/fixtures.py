@@ -2,7 +2,6 @@ import pytest
 import os
 
 from dotenv import load_dotenv
-import firebase_admin
 
 from app.external_dependencies.mongo import Mongo
 from app.external_dependencies.fcm import FCM

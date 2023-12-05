@@ -14,7 +14,11 @@ def master_instance(db_instance, fcm_instance):
 
 def test_master(master_instance, db_instance):
     users = db_instance.get_docs("Users")
-    ids = [str(user["_id"]) for user in users]
+    ids = [
+        str(user["_id"])
+        for user in users
+        if not user["is_deleted"] and len(user["appliances"])
+    ]
     job_names = ["collector_", "checker_", "updater_"]
 
     master_instance.run()

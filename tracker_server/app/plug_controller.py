@@ -14,14 +14,14 @@ class PlugController:
         is_async (bool): True if the device interaction is asynchronous, False otherwise.
     """
 
-    def __init__(self, event_loop: asyncio.AbstractEventLoop, data: dict):
+    def __init__(self, data: dict):
         """
         Constructor for the PlugController class.
         Args:
-            event_loop (asyncio.AbstractEventLoop): The event loop for asynchronous operations.
             data (dict): A dictionary containing user data.
         """
-        self.loop = event_loop
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.plug, self.is_async = self._create_plug(data)
 
     def _create_plug(self, data):
