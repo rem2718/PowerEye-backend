@@ -50,7 +50,6 @@ def validate_name(user_id, name, current_appliance_id=None):
 
         # Check if the name is unique among active appliances in the user's account
         for appliance in user.appliances:
-            print(appliance._id)
             # Exclude the current appliance being updated (if provided)
             if current_appliance_id and str(appliance._id) == current_appliance_id:
                 continue
@@ -97,9 +96,6 @@ def validate_cloud_id(user_id, cloud_id):
         # Extracting the list of ids from user_smartplugs
         smartplug_ids = [smartplug['id'] for smartplug in user_smartplugs]
 
-        for x in smartplug_ids:
-            print(x)
-            print('in smartplug_ids loop')
 
         if cloud_id not in smartplug_ids:
             return False, jsonify({'message': 'Invalid cloud_id, or the plug is already in use'}), 400
@@ -238,8 +234,7 @@ def delete_appliance(user_id, appliance_id):
         
         # Get user and appliance
         user = User.objects.get(id=user_id, is_deleted=False)
-        for x in user.appliances:
-            print(str(x._id))
+
         appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
 
         if not user or not appliance:

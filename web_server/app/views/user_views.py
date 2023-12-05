@@ -91,12 +91,20 @@ def login_route():
 @jwt_required()
 def logout_route():
     """
-    Endpoint for user logout.
+    Endpoint for user logout. The device id is needed to stop sending notifications when the user is logged out
+
+    Request Body:
+    {
+        "device_id": "123456789"  # The unique identifier of the device to be logged out.
+    }
 
     Returns:
-    JSON: Response message.
+    JSON: Response message indicating the success or failure of the logout operation.
     """
-    return logout()
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    device_id=data.get('device_id')
+    return logout(user_id,device_id)
 
 @user_views.route('/user', methods=['GET'])
 @jwt_required()
@@ -224,6 +232,7 @@ def get_profile_pic_route():
     """
     user_id = get_jwt_identity()
     return get_profile_pic(user_id)
+
 
 
 

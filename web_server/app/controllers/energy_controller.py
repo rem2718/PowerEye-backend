@@ -21,6 +21,7 @@ CURRENT_DATE = datetime.now()
 CURRENT_MONTH = CURRENT_DATE.month
 CURRENT_YEAR = CURRENT_DATE.year
 
+
 CURRENT_YEAR_START_DATE = datetime(CURRENT_YEAR, 1, 1)
 CURRENT_YEAR_END_DATE = datetime(CURRENT_YEAR, 12, 31)
 
@@ -281,7 +282,7 @@ def get_appliance_weekly_energy(user_id, appliance_id):
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': appliance.energy}
         
-        print(result)
+
         
 
         # Create the response data
@@ -329,7 +330,7 @@ def get_room_weekly_energy(user_id, room_id):
             appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
             today_energy += appliance.energy
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': today_energy}
-        print(result)
+
 
         # Create the response data
         response_data = {
@@ -379,22 +380,15 @@ def get_total_weekly_energy(user_id):
 
             # Accumulate energy values for each appliance for the current week
             for energy_doc in weekly_energy_docs:
-                print(energy_doc.date)
                 for appliance in appliances:
                     appliance_name = str(appliance.name)
-                    print(str(appliance.name))
-                    print(abs(getattr(energy_doc, str(appliance._id), 0)))
                     total_energy_by_appliance[appliance_name] += abs(getattr(energy_doc, str(appliance._id), 0))
-                    print('------------------------------------')
-            print('________________________________________________________________')
+                    
+
             # Add today's energy directly from the appliances
             # If this is the current week, add today's energy to the energy of the current week
             if weeks_ago == 0:
                 for entry in today_energy:
-                    
-                    print('hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
-                    print(entry['name'])
-                    print(entry['energy'])
                     total_energy_by_appliance[entry['name']] += entry['energy']
 
             # Create the weekly energy data entry
@@ -453,7 +447,7 @@ def get_appliance_monthly_energy(user_id, appliance_id):
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
         
-        print(result)
+
         # Create the response data
         response_data = {
             'appliance_id': str(appliance._id),
@@ -614,7 +608,7 @@ def get_appliance_yearly_energy(user_id, appliance_id):
 
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
-        print(result)
+        
         # Create the response data
         response_data = {
             'appliance_id': str(appliance._id),
@@ -750,3 +744,45 @@ def get_total_yearly_energy(user_id):
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
+# _____________________________________________________________________
+def get_past_month_energy(user_id):
+    try:
+        # Get user and appliances
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            message = 'User not found.'
+            return make_response(jsonify({'message': message}), 404)
+
+        appliances = [app for app in user.appliances if not app.is_deleted]
+        
+        
+        
+        # Calculate the first day of the current month
+        first_day_of_current_month = CURRENT_DATE.replace(day=1)
+
+        # Calculate the last day of the previous month
+        last_day_of_past_month = first_day_of_current_month - timedelta(days=1)
+
+        # Calculate the first day of the previous month
+        first_day_of_past_month = last_day_of_past_month.replace(day=1)
+
+        # Fetch energy documents for the entire duration
+        energy_docs = Energy.objects(user=user_id, date__gte=first_day_of_past_month , date__lte=last_day_of_past_month )
+
+
+        # Accumulate energy values for each appliance for the past month
+        total_energy=0
+        for energy_doc in energy_docs:
+            for appliance in appliances:
+                total_energy += abs(getattr(energy_doc, str(appliance._id), 0))
+
+
+        return make_response(jsonify(total_energy), 200)
+
+    except DoesNotExist:
+        return False, jsonify({'message': 'User not found'}), 404
+
+    except Exception as e:
+        traceback.print_exc()
+        return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
+    
