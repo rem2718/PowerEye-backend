@@ -130,8 +130,38 @@ def login(email, password):
         return jsonify({"error": str(e)}), 500
 
 
-def logout():
-    return jsonify({"message": "Logged out successfully."}), 200
+def logout(user_id, device_id):
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+        # Check if the device_id already exists in the notified_devices list
+        notified_device = next(
+            (nd for nd in user.notified_devices if nd.device_id == device_id), None
+        )
+
+        if notified_device:
+            # Remove the NotifiedDevice from the list
+            user.notified_devices.remove(notified_device)
+
+            # Save the user document with the updated notified_devices
+            user.save()
+
+            return jsonify({"message": "Logged out successfully"}), 200
+        else:
+            return jsonify({"message": "Device not found in notified devices list."}), 404
+
+    except DoesNotExist:
+        return jsonify({"message": "User not found."}), 404
+    except Exception as e:
+        traceback.print_exc()
+        return (
+            jsonify({"message": f"Error occurred while Logging out {str(e)}"}),
+            500,
+        )
+
 
 
 def get_user_info(user_id):
