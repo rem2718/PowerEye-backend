@@ -50,26 +50,6 @@ def validate_password(password):
         )
 
 
-def file_to_base64(file_path):
-    try:
-        with open(file_path, "rb") as file:
-            _, file_extension = os.path.splitext(file_path)
-            file_extension = file_extension[1:]
-            prefix = f"data:image/{file_extension.lower()};base64,"
-            # Read the file content
-            file_content = file.read()
-
-            # Encode the file content to base64
-            base64_encoded = base64.b64encode(file_content).decode("utf-8")
-
-            return prefix + base64_encoded
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-        return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
-
 
 def signup(email, power_eye_password, cloud_password):
     try:
@@ -208,13 +188,13 @@ def update_user_info(
             if not is_valid_pass:
                 return error_response, status_code
 
-            print(is_valid_pass)
+
             hashed_password = bcrypt.generate_password_hash(power_eye_password).decode(
                 "utf-8"
             )
-            print(user.password)
+
             user.password = hashed_password
-            print(user.password)
+
 
         if username is not None:
             user.username = username
@@ -238,19 +218,7 @@ def delete_user(user_id):
             return jsonify({"message": "User not found."}), 404
 
         # Delete rooms associated with the user
-        deleted_rooms = Room.objects(user_id=user.id).delete()
-        if deleted_rooms:
-            print(f"{deleted_rooms} rooms deleted.")
-
-        # # Delete powers associated with the user
-        # deleted_powers = Power.objects(user=user).delete()
-        # if deleted_powers:
-        #     print(f"{deleted_powers} powers deleted.")
-
-        # # Delete energy records associated with the user
-        # deleted_energies = Energy.objects(user=user).delete()
-        # if deleted_energies:
-        #     print(f"{deleted_energies} energies deleted.")
+        Room.objects(user_id=user.id).delete()
 
         # Soft delete the user
         user.is_deleted = True
@@ -342,35 +310,41 @@ def delete_goal(user_id):
 
 
 def upload_profile_pic(user_id, file, filename_with_extension):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
+    try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
 
-    if not user:
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+        if not file:
+            return jsonify({"error": "No image data provided"}), 400
+
+        if not filename_with_extension:
+            return jsonify({"error": "No filename provided"}), 400
+
+        # Generate a unique filename to avoid conflicts
+        filename = f"{user_id}.png"
+
+        # Save the uploaded profile picture file to the file system.
+        if save_base64_image(file, filename):
+            return jsonify({"message": "Profile picture uploaded successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to save profile picture"}), 500
+    except DoesNotExist:
         return jsonify({"message": "User not found."}), 404
-
-    if not file:
-        return jsonify({"error": "No image data provided"}), 400
-
-    if not filename_with_extension:
-        return jsonify({"error": "No filename provided"}), 400
-
-    # Generate a unique filename to avoid conflicts
-    filename = f"{user_id}.png"
-
-    # Save the uploaded profile picture file to the file system.
-    if save_base64_image(file, filename):
-        return jsonify({"message": "Profile picture uploaded successfully"}), 200
-    else:
-        return jsonify({"error": "Failed to save profile picture"}), 500
-
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 def get_profile_pic(user_id):
-    # Retrieve the user by ID and make sure they are not deleted
-    user = User.objects.get(id=user_id, is_deleted=False)
-    if not user:
-        return jsonify({"message": "User not found."}), 404
-
     try:
+        # Retrieve the user by ID and make sure they are not deleted
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+
         # Try all allowed extensions
         for extension in ALLOWED_EXTENSIONS:
             filename = f"{user_id}.{extension}"
@@ -385,9 +359,11 @@ def get_profile_pic(user_id):
                 return jsonify({"image": file_to_base64(file_path)}), 200
     except FileNotFoundError:
         return jsonify({"error": "Profile picture not found"}), 404
+    except DoesNotExist:
+        return jsonify({"message": "User not found."}), 404
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 def set_fcm_token(user_id, device_id, fcm_token):
     try:

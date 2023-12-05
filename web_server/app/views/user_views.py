@@ -227,6 +227,7 @@ def get_profile_pic_route():
 
 
 
+
 @user_views.route('/FCM_token', methods=["POST"])
 @jwt_required()
 def set_fcm_token_route():
