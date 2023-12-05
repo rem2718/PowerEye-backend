@@ -85,21 +85,28 @@ class FCM:
         devices = self.db.get_doc(
             "Users", {"_id": ObjectId(user)}, {"notified_devices": 1}
         )
-        devices = devices["notified_devices"]
-
+        devices = devices.get("notified_devices", [])
         title, body = self.map_message(type, data)
         responses = []
         # Log the notification
         self.logger.info(f"notify: {type} {data}")
         for dev in devices:
             try:
+                alert = messaging.ApsAlert(title=title, body=body)
+                aps = messaging.Aps(alert=alert, sound="default")
+                payload = messaging.APNSPayload(aps)
                 token = dev["fcm_token"]
                 message = messaging.Message(
+                    notification=messaging.Notification(
+                        title=title,
+                        body=body,
+                    ),
                     data={
                         "title": title,
                         "body": body,
                     },
                     token=token,
+                    apns=messaging.APNSConfig(payload=payload),
                 )
                 response = messaging.send(message)
                 self.logger.info(f"Notification sent with response: {response}")
