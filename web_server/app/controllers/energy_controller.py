@@ -785,4 +785,24 @@ def get_past_month_energy(user_id):
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
-    
+
+def get_current_month_energy(user_id):
+    try: 
+        # Get user and appliances
+        user = User.objects.get(id=user_id, is_deleted=False)
+        if not user:
+            message = 'User not found.'
+            return make_response(jsonify({'message': message}), 404)
+
+        appliances = [app for app in user.appliances if not app.is_deleted]
+        total_energy= user.current_month_energy
+
+        for appliance in appliances:
+            total_energy += appliance.energy
+        return make_response(jsonify(total_energy), 200)
+    except DoesNotExist:
+        return False, jsonify({'message': 'User not found'}), 404
+
+    except Exception as e:
+        traceback.print_exc()
+        return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))

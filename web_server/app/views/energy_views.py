@@ -44,7 +44,7 @@ from app.controllers.energy_controller import (
     get_total_weekly_energy,
     get_total_monthly_energy,
     get_total_yearly_energy,
-    get_past_month_energy
+    get_past_month_energy, get_current_month_energy
 )
 
 # Create a Blueprint to organize routes
@@ -230,4 +230,18 @@ def get_past_month_energy_route():
     """
     user_id = get_jwt_identity()
     return get_past_month_energy(user_id)
+
+
+
+@energy_views.route('/current_month_total_energy', methods=['GET'])
+@jwt_required()
+def get_current_month_energy_route():
+    """
+    Endpoint to retrieve the current month total energy.
+    Returns:
+    JSON: The current month total energy for the user.
+    """
+    user_id = get_jwt_identity()
+    return get_current_month_energy(user_id)
+
 
