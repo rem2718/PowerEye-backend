@@ -1,15 +1,8 @@
-# PowerEye Backend
+# Finding Maximum Sum Subarray
 
-**Home Energy Monitoring System (HEMS)** is a system that collects energy data from various household appliances, processes and analyzes them, and presents the findings to users to give them insights about their energy consumption for better energy sustainability.
 
-## Servers:
-
-- **Web Server:** This server hosts the user interface, handles HTTP requests through RESTful APIs, manages user authentication, and facilitates user interactions.
-- **Tracker Server:** The backbone of the system, centralizing backend operations, processing device data, and providing valuable insights to enhance user engagement.
-
-## How to Run It:
-
-To run each server separately, check the _README.md_ file inside their respective folders.
+**Finding Maximum Sum Subarray**  is a web page project that addresses the problem of finding the maximum sum subarray with a user-specified number of elements. 
+Algorithms like Brute Force, Divide-and-Conquer, Dynamic Programming, and Greedy Algorithm are implemented and compared for efficiency.
 
 ## Thank You!
 
@@ -20,9 +13,8 @@ Made by:
 
 | Name         | Email               |
 | ------------ | ------------------- |
-| Reem Hejazi  | 219410002@psu.edu.sa|
-| Sara Al Shagawi | 219410319@psu.edu.sa|
-| Maya Emar    | 219410523@psu.edu.sa|
 | Nour Al Akhras | 220410351@psu.edu.sa|
+| Hifaa Zin Eddin	 | 220410581@psu.edu.sa|
 
-GitHub: [@rem2718](https://github.com/rem2718)
+
+GitHub: [@NourAlakhras](https://github.com/NourAlakhras)
