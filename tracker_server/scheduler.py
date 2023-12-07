@@ -53,7 +53,7 @@ class Scheduler:
             "default": ThreadPoolExecutor(num_cores),
         }
         job_defaults = {
-            "coalesce": False,
+            "coalesce": True,
             "max_instances": 3,
         }
         self.scheduler = BlockingScheduler(job_defaults, executors=executors)
