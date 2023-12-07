@@ -8,5 +8,3 @@ venv/
 models_filesystem/
 logs/
 .pytest_cache
-.env.testing
-.flaskenv

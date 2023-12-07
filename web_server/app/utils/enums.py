@@ -32,7 +32,6 @@ class ApplianceType(Enum):
     RECEIVER = 18
     SPORTS_MACHINE = 19
     
-    
 class PlugType(Enum):
     MEROSS = 1
     TUYA = 2

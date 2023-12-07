@@ -13,7 +13,6 @@ from werkzeug.utils import secure_filename
 import mimetypes
 import os
 
-
 # Function to validate PowerEye system password
 def validate_password(password):
     try:
@@ -32,8 +31,6 @@ def validate_password(password):
 
     except Exception as e:
         return False, jsonify({'message': f'Error occurred while validating password: {str(e)}'}), 500
-    
-
 
 def signup(email, power_eye_password, cloud_password):
     try:
@@ -42,14 +39,11 @@ def signup(email, power_eye_password, cloud_password):
         if not is_valid_pass:
             return error_response, status_code
 
-
         # Validate Meross credentials
-
         cloud_user = {'email':email, 'password': cloud_password}  # Create user object
         is_valid_meross, error_response,status_code=cloud.verify_credentials(PlugType.MEROSS,cloud_user)
         if not is_valid_meross:
             return error_response, status_code
-        
 
         # Check if the email is already associated with a non-deleted user
         existing_user = User.objects(email=email, is_deleted=False).first()
@@ -74,8 +68,6 @@ def signup(email, power_eye_password, cloud_password):
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-
-
 
 def login(email, password):
     try:
@@ -107,7 +99,6 @@ def login(email, password):
 def logout():
     return jsonify({'message': 'Logged out successfully.'}), 200
 
-
 def get_user_info(user_id):
     try:
         # Retrieve the user by ID and make sure they are not deleted
@@ -123,7 +114,6 @@ def get_user_info(user_id):
             'energy_goal': user.energy_goal,
             # Add other user fields as needed
         }
-
         return jsonify({'user_info': user_info}), 200
 
     except Exception as e:
@@ -149,17 +139,14 @@ def update_user_info(user_id, meross_password=None, power_eye_password=None, use
             user.password = hashed_password
             print(user.password)
             
-
         if username is not None:
             user.username = username
-
         user.save()
 
         return jsonify({'message': 'User information updated successfully'}), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 def delete_user(user_id):
     try:
@@ -178,8 +165,6 @@ def delete_user(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
 def get_goal(user_id):
     # Retrieve the user by ID and make sure they are not deleted
     user = User.objects.get(id=user_id, is_deleted=False)
@@ -189,7 +174,6 @@ def get_goal(user_id):
     
     goal = user.energy_goal
     return jsonify({'energy_goal': goal}), 200
-
 
 def set_goal(user_id, energy):
     # Retrieve the user by ID and make sure they are not deleted
@@ -275,7 +259,6 @@ def get_profile_pic(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-
 def set_FCM_token(user_id, device_id, fcm_token):
     try:
         # Retrieve the user by ID and make sure they are not deleted
@@ -296,7 +279,6 @@ def set_FCM_token(user_id, device_id, fcm_token):
 
         # Save the user document with the updated/added notified_devices
         user.save()
-
         return jsonify({'message': 'FCM token set successfully'}), 200
 
     except Exception as e:

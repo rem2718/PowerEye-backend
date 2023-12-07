@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv('.env.testing')
+load_dotenv('.env')
 
 class TestConfig:
     DEBUG = False
