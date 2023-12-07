@@ -2,7 +2,7 @@
 
 The Tracker Server is composed of 3 interfaces and 11 classes, managing power data from Meross Cloud, storing device details in MongoDB, tracking events like energy goals, and delivering personalized recommendations and push notifications through the FCM Admin SDK. It centralizes backend operations, processes Meross device data, and offers valuable insights. Its event monitoring, personalized recommender, and push notification system boost user engagement and satisfaction.
 
-## How to Run It:
+## How to Run The Server:
 
 - Inside the _trscker\_server_, place _.secrets_ folder, that we sent you before.
 
@@ -40,7 +40,7 @@ The Tracker Server is composed of 3 interfaces and 11 classes, managing power da
         python scheduler.py
     ```
 
-## How to Run The Tests It:
+## How to Run The Tests:
 
 - If you haven't completed the steps for running the server, follow all of them except for the last one; instead, run the following:
 
@@ -54,6 +54,25 @@ The Tracker Server is composed of 3 interfaces and 11 classes, managing power da
         # or  
         pytest tests/integration
     ```
+
+## How to Run The Results codes
+
+- to run the execution time code for Checker:
+
+    ```
+        python results/execution_time.py
+    ```
+- to run the energy comparison for 10 days: 
+
+    ```
+        python results/energy_comparison.py
+    ```
+- to run the machine learning models scores code:
+
+    ```
+        python results/ml_models.py
+    ```
+- note: the results may vary depending on the computer you're running on and the time you're running the code
 
 ## Thank You!
 
