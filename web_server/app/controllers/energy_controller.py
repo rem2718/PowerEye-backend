@@ -277,12 +277,15 @@ def get_appliance_weekly_energy(user_id, appliance_id):
         # Populate the result dictionary with energy values
         for energy_doc in energy_docs:
             date_str = energy_doc.date.strftime('%Y-%m-%d')
+            
+            # Ensure the dictionary entry exists before updating the energy value
+            if date_str not in result:
+                result[date_str] = {'day': energy_doc.date.strftime('%a'), 'energy': 0}
+            
             result[date_str]['energy'] = abs(getattr(energy_doc, str(appliance._id), 0))
 
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': appliance.energy}
-        
-
         
 
         # Create the response data
