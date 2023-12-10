@@ -72,6 +72,11 @@ The Tracker Server is composed of 3 interfaces and 11 classes, managing power da
     ```
         python results/ml_models.py
     ```
+- to run energy reduction code:
+
+    ```
+        python results/energy_reduction.py
+    ```
 - note: the results may vary depending on the computer you're running on and the time you're running the code
 
 ## Thank You!
