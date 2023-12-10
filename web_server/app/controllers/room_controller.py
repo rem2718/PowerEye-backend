@@ -230,8 +230,6 @@ def add_appliances_to_room(user_id, room_id, appliance_ids):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-
-
 def get_all_user_rooms(user_id):
     try:
         # Retrieve the user by ID and make sure they are not deleted
@@ -252,7 +250,6 @@ def get_all_user_rooms(user_id):
                 'name': room.name,
                 'appliances': []  # Initialize an empty list for appliance IDs
             }
-
 
             for appliance_id in room.appliances:
                 appliance = next((app for app in user.appliances if app._id == appliance_id), None)

@@ -287,7 +287,7 @@ def test_get_profile_pic(user_id, file_exists, allowed_extensions, expected_stat
 
 @pytest.mark.parametrize("user_id, device_id, fcm_token, expected_status", [
     # Test case for an existing user and existing device_id
-    ("6552954c710c09f3b476eece", "6570b20848a7178af2b61c55", 
+    ("6552954c710c09f3b476eece", "65732acbb3d9e8440d97f33d", 
      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NTY3OTk5NTIwYzA0NGQxNzUwMGM1ZDUiLCJleHAiOjE3MDQwNDQ1NzF9.jzV-kqAT63koiG-toEtQ1ULUmIiM1lpXw0wwLt3uWWM", 200),
     # Test case for an existing user and non-existent device_id
     ("6552954c710c09f3b476eece", "5670b20848a7178af2b61c55", 
