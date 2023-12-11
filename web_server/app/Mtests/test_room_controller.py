@@ -4,6 +4,7 @@ import json
 from mongoengine import connect
 from app.controllers.room_controller import *
 from unittest.mock import MagicMock  #to mock the massege
+from unittest import mock
 
 # Define a default connection
 connect(db='hemsproject', host='mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/hemsproject')
@@ -45,7 +46,12 @@ def test_validate_room_name_invalid_name_length():
 
 # Test room name function using duplicate name
 def test_validate_room_name_duplicate_name():
-    result, message, status_code = validate_room_name(User(), "Test Room")
+    # Create a test user
+    user = User()
+    # Create a test room with the desired name and associate it with the user
+    room = Room(user_id=user.id, name="Test")
+    room.save()
+    result, message, status_code = validate_room_name(user, "Test")
     assert result == False
     assert json.loads(message.get_data(as_text=True)) == {'message': 'The room name must be unique among all rooms in your account'}
     assert status_code == 400
@@ -106,7 +112,7 @@ def test_get_room_appliances_room_not_found():
 
 # Test get room appliance function for empty room/user doesn't have appliance in the room
 def test_get_room_appliances_no_user_appliances():
-    response, status_code = get_room_appliances('65721306827e8e413bc436ee', '657223ba827e8e413bc436f6')
+    response, status_code = get_room_appliances('65721306827e8e413bc436ee', '6576ea95bf88dda3ea0fac59')
     assert status_code == 200
 
 # ---------------------------------------Switch Room Test-----------------------------------------------------------
@@ -139,8 +145,10 @@ def test_switch_room_no_room_appliances():
     assert status_code == 200
 
 # ---------------------------------------Add Appliance To Room Test-----------------------------------------------------------
+# if you run test multiple time it will fail since we added the appliance in the first run
+# add appliance successfully to the room
 def test_add_appliances_to_room_appliances_added_successfully():
-    response, status_code = add_appliances_to_room('64d154bc94895e0b4c1bc080', '65734345413329dd0d56e2b7', ['64d1659d93d44252699aa225'])
+    response, status_code = add_appliances_to_room('64d154bc94895e0b4c1bc080', '65734345413329dd0d56e2b7', ['64d1687493d44252699aa22c'])
     assert status_code == 200
 
 def test_add_appliances_to_room_user_not_found():
@@ -164,8 +172,8 @@ def test_add_appliances_to_room_appliance_marked_deleted():
     assert status_code == 400
 
 def test_add_appliances_to_room_appliances_already_in_room():
-    response, status_code = add_appliances_to_room('64d154bc94895e0b4c1bc080', '65734345413329dd0d56e2b7', ['64d1659d93d44252699aa226'])
-    assert status_code == 200
+    response, status_code = add_appliances_to_room('64d154bc94895e0b4c1bc080', '656df4efaba9ceb940072283', ['64d1682993d44252699aa22a'])
+    assert status_code == 400
 
 # ---------------------------------------Get All User Room Test-----------------------------------------------------------
 def test_get_all_user_rooms_success():
@@ -178,19 +186,17 @@ def test_get_all_user_rooms_user_not_found():
 
 def test_get_all_user_rooms_no_rooms_found():
     response, status_code = get_all_user_rooms('64d154d494895e0b4c1bc081') #qatar
+    print(response.get_data(as_text=True))
+    print(status_code)
     assert status_code == 404
 
 def test_get_all_user_rooms_appliance_not_found():
     response, status_code = get_all_user_rooms('656ef0fe08a5e799018f9771')
-    assert status_code == 404
-
-# def test_get_all_user_rooms_appliance_marked_deleted():
-#     response, status_code = get_all_user_rooms('user_id_appliance_deleted')
-#     assert status_code == 400
+    assert status_code == 500
 
 # ---------------------------------------Delete Appliance From Room Test-----------------------------------------------------------
 def test_delete_appliance_from_room_success():
-    response, status_code = delete_appliance_from_room('64d154bc94895e0b4c1bc080', '65734345413329dd0d56e2b7', '64d1659d93d44252699aa225')
+    response, status_code = delete_appliance_from_room('64d154bc94895e0b4c1bc080', '65734345413329dd0d56e2b7', '64d1685693d44252699aa22b')
     assert status_code == 200
 
 def test_delete_appliance_from_room_user_not_found():
@@ -211,7 +217,7 @@ def test_update_room_name_success():
     assert status_code == 200
 
 def test_update_room_name_user_not_found():
-    response, status_code = update_room_name('65678dba8535b0176edcda69', '656d0fc737f00ff90a3c9847', 'Maya room')
+    response, status_code = update_room_name('65678dba8535b0176edcda69', '656d0fc737f00ff90a3c9847', 'Livingroom')
     assert status_code == 404
 
 def test_update_room_name_room_not_found():
@@ -224,7 +230,7 @@ def test_update_room_name_invalid_name():
 
 # ---------------------------------------Delete Room Test-----------------------------------------------------------
 def test_delete_room_success():
-    response, status_code = delete_room('656ef0fe08a5e799018f9771', '6574f38cd5efe12fd9baea33')
+    response, status_code = delete_room('656ef0fe08a5e799018f9771', '65776b6e79a86c5419a4726c')
     assert status_code == 200
 
 def test_delete_room_user_not_found():

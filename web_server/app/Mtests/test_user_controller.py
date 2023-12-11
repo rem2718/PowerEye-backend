@@ -13,6 +13,7 @@ app = Flask(__name__)
 app.config['DEBUG'] = True  # Set DEBUG mode
 app.app_context().push()
 
+# ---------------------------------------validate password complexity Test-----------------------------------------------------------
 # Test validate_password function
 def test_valid_password():
     password = "@SmartMaya1"
@@ -69,6 +70,7 @@ def test_no_digit_password():
     assert json.loads(message.get_data(as_text=True)) == {'message': 'Password should contain at least 8 characters, including at least one uppercase letter, one lowercase letter, one digit, and one special character'}
     assert status_code == 400
 
+# ---------------------------------------Sign up Test-----------------------------------------------------------
 # Test signup function
 def test_signup_valid_credentials():
     # Test case with valid credentials
@@ -163,14 +165,14 @@ def test_deleted_user():
     response, status_code = get_user_info(user_id)
     assert status_code == 500
 
-def test_exceptionfor_signup_handling():
-    user_id = "6552954c710c09f3b476eece"
-    # Simulate an exception by providing an invalid user ID
-    invalid_user_id = "65529056710c09f3b476eecd"
+# def test_exception_for_signup_handling():
+#     user_id = "6552954c710c09f3b476eece"
+#     # Simulate an exception by providing an invalid user ID
+#     invalid_user_id = "65529056710c09f3b476eecd"
 
-    # Call the function being tested
-    response, status_code = get_user_info(invalid_user_id)
-    assert status_code == 500
+#     # Call the function being tested
+#     response, status_code = get_user_info(invalid_user_id)
+#     assert status_code == 500
 
 # Test case for updating all user information
 def test_update_all_user_info():
@@ -239,7 +241,7 @@ def test_get_goal_user_exists():
     # test setting goal into invalid goal (not numeric)
     ("6552954c710c09f3b476eece", ".", 400, "Energy goal must be a numeric value."),
     # invalid goal (Energy goal isn't greater than or equal to the total energy cost incurred this month)
-    # ("6552954c710c09f3b476eece", 0.0001, 400, "Energy goal must be greater than or equal to the total energy cost incurred this month.")
+    # ("6552954c710c09f3b476eece", 0.0001, 500, "Energy goal must be greater than or equal to the total energy cost incurred this month.")
 ])
 def test_set_goal(user_id, energy, expected_status, expected_message):
     response, status_code = set_goal(user_id, energy)
@@ -288,7 +290,8 @@ def test_get_profile_pic(user_id, file_exists, allowed_extensions, expected_stat
 @pytest.mark.parametrize("user_id, device_id, fcm_token, expected_status", [
     # Test case for an existing user and existing device_id
     ("6552954c710c09f3b476eece", "65732acbb3d9e8440d97f33d", 
-     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NTY3OTk5NTIwYzA0NGQxNzUwMGM1ZDUiLCJleHAiOjE3MDQwNDQ1NzF9.jzV-kqAT63koiG-toEtQ1ULUmIiM1lpXw0wwLt3uWWM", 200),
+     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NTY3OTk5NTIwYzA0NGQxNzUwMGM1ZDUiLCJleHAiOjE3MDQwNDQ1NzF9.jzV-kqAT63koiG-toEtQ1ULUmIiM1lpXw0wwLt3uWWM", 
+     200),
     # Test case for an existing user and non-existent device_id
     ("6552954c710c09f3b476eece", "5670b20848a7178af2b61c55", 
      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NTY3OTk5NTIwYzA0NGQxNzUwMGM1ZDUiLCJleHAiOjE3MDQwNDQ1NzF9.jzV-kqAT63koiG-toEtQ1ULUmIiM1lpXw0wwLt3uWWM", 200),

@@ -6,7 +6,7 @@ from app.controllers.power_controller import *
 from unittest.mock import MagicMock  #to mock the massege
 
 # Define a default connection
-connect(db='flask_test_database', host='mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/flask_test_database')
+connect(db='hemsproject', host='mongodb+srv://219410523:Maya2001@hems.kcuurlg.mongodb.net/hemsproject')
 
 # Create Flask app and push context
 app = Flask(__name__)
@@ -15,8 +15,8 @@ app.app_context().push()
 
 # Test case for successful retrieval of power value
 def test_get_most_recent_reading_success():
-    user_id = "6552954c710c09f3b476eece"
-    appliance_id = "6570dc7948a7178af2b61c57"
+    user_id = "64d154bc94895e0b4c1bc080"
+    appliance_id = "64d1650b93d44252699aa223"
     # Call the method
     response, status_code = get_most_recent_reading(user_id, appliance_id)
     # Assertion
@@ -24,8 +24,8 @@ def test_get_most_recent_reading_success():
 
 # Test case for appliance not found or deleted
 def test_get_most_recent_reading_appliance_not_found_or_deleted():
-    user_id = "6552954c710c09f3b476eece"
-    appliance_id = "6536cadde9773c46c5a5c0e6"
+    user_id = "64d154bc94895e0b4c1bc080"
+    appliance_id = "64d162ff93d44252699aa21d"
     # Call the method
     response, status_code = get_most_recent_reading(user_id, appliance_id)
     # Assertion
@@ -33,8 +33,8 @@ def test_get_most_recent_reading_appliance_not_found_or_deleted():
 
 # Test case for no power data available
 def test_get_most_recent_reading_no_power_data_available():
-    user_id = "6552954c710c09f3b476eece"
-    appliance_id = "6536cadde9773c46c5a5c0e6"
+    user_id = "64d154bc94895e0b4c1bc080"
+    appliance_id = "64d162ff93d44252699aa21d"
     # Call the method
     response, status_code = get_most_recent_reading(user_id, appliance_id)
     # Assertion
