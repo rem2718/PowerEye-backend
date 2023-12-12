@@ -104,11 +104,11 @@ def validate_cloud_id(user_id, cloud_id):
         return True, None, None
 
     except DoesNotExist:
-        return jsonify({'message': 'User not found'}), 404
+        return False, jsonify({'message': 'User not found'}), 404
 
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'message': f'Error occurred while validating cloud ID: {str(e)}'}), 500
+        return False,jsonify({'message': f'Error occurred while validating cloud ID: {str(e)}'}), 500
 
 
 def add_appliance(user_id, name, cloud_id, type):
@@ -151,10 +151,10 @@ def add_appliance(user_id, name, cloud_id, type):
         user.appliances.append(appliance)
         user.save()
 
-        return jsonify({'message': f'Appliance {name} added successfully', 'appliance_id': appliance_id}), 201
+        return make_response( jsonify({'message': f'Appliance {name} added successfully', 'appliance_id': appliance_id}), 201)
 
     except DoesNotExist:
-        return jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()

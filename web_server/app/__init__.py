@@ -39,11 +39,14 @@ def create_app():
     jwt.init_app(app)
 
     # Register blueprints
+    
     app.register_blueprint(appliance_views)
     app.register_blueprint(room_views)
     app.register_blueprint(power_views)
     app.register_blueprint(user_views)
     app.register_blueprint(energy_views)
+
+    return app
 
     return app
 

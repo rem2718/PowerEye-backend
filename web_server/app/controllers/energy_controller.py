@@ -26,160 +26,126 @@ CURRENT_YEAR_START_DATE = datetime(CURRENT_YEAR, 1, 1)
 CURRENT_YEAR_END_DATE = datetime(CURRENT_YEAR, 12, 31)
 
 def convert_to_weekly_energy_format(data):
-    # Convert date strings to datetime objects
-    formatted_data = {datetime.strptime(date_str, '%Y-%m-%d').date(): values for date_str, values in data.items()}
+    try:
+        # Convert date strings to datetime objects
+        formatted_data = {datetime.strptime(date_str, '%Y-%m-%d').date(): values for date_str, values in data.items()}
 
-    # Sort the data by date in ascending order
-    sorted_data = sorted(formatted_data.items(), key=lambda x: x[0])
+        # Sort the data by date in ascending order
+        sorted_data = sorted(formatted_data.items(), key=lambda x: x[0])
 
-    # Initialize result list
-    result_list = []
+        # Initialize result list
+        result_list = []
 
-    # Group the data into weeks
-    week_data = defaultdict(list)
-    current_week_start = None
+        # Group the data into weeks
+        week_data = defaultdict(list)
+        current_week_start = None
 
-    for date, values in sorted_data:
-        if not current_week_start:
-            current_week_start = date
+        for date, values in sorted_data:
+            if not current_week_start:
+                current_week_start = date
 
-        week_data[current_week_start].append(values)
+            week_data[current_week_start].append(values)
 
-        if date.weekday() == 6:  # Sunday
-            current_week_start = None
+            if date.weekday() == 6:  # Sunday
+                current_week_start = None
 
-    # Generate the final result
-    for i, (week_start, week_values) in enumerate(reversed(list(week_data.items()))):
-        if i == 0:
-            week_title = "This Week"
-        else:
-            weeks_ago= (datetime.now().date() - week_start).days // 7
-            week_title = f'{weeks_ago} Week{"s" if weeks_ago > 1 else ""} ago'
-        energy_values = defaultdict(list)
+        # Generate the final result
+        for i, (week_start, week_values) in enumerate(reversed(list(week_data.items()))):
+            if i == 0:
+                week_title = "This Week"
+            else:
+                weeks_ago= (datetime.now().date() - week_start).days // 7
+                week_title = f'{weeks_ago} Week{"s" if weeks_ago > 1 else ""} ago'
+            energy_values = defaultdict(list)
 
-        # Ensure the week starts from Monday and fill missing days with zeros
-        for day_values in week_values:
-            current_day = day_values['day']
-            energy_values[current_day].append(day_values['energy'])
+            # Ensure the week starts from Monday and fill missing days with zeros
+            for day_values in week_values:
+                current_day = day_values['day']
+                energy_values[current_day].append(day_values['energy'])
 
-        # Fill missing days with zeros
-        for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-            if day not in energy_values:
-                energy_values[day] = [0]
+            # Fill missing days with zeros
+            for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
+                if day not in energy_values:
+                    energy_values[day] = [0]
 
-        result_list.append({
-            'title': week_title,
-            'label': list(energy_values.keys()),
-            'energy': [sum(values) / len(values) if values else 0 for values in energy_values.values()]
-        })
+            result_list.append({
+                'title': week_title,
+                'label': list(energy_values.keys()),
+                'energy': [sum(values) / len(values) if values else 0 for values in energy_values.values()]
+            })
 
-    return result_list
+        return result_list
+    except ValueError:
+            raise ValueError("Invalid date format")
+    except IndexError:
+        raise ValueError("Invalid date format")
 
 def convert_to_monthly_energy_format(data):
-    monthly_data = []
+    try:
+        monthly_data = []
+        # Extract unique month names from the data
+        month_names = list(set(date.split('-')[1] for date in data.keys()))
+        month_names.sort()  # Sort month names
 
-    # Extract unique month names from the data
-    month_names = list(set(date.split('-')[1] for date in data.keys()))
-    month_names.sort()  # Sort month names
+        for month in month_names:
+            # Filter data for the current month
+            month_data = {date: value for date, value in data.items() if date.startswith(f'2023-{month}')}
+            
+            # Extract day labels and energy values
+            day_labels = list(range(1, len(month_data) + 1))
+            energy_values = list(month_data.values())
 
-    for month in month_names:
-        # Filter data for the current month
-        month_data = {date: value for date, value in data.items() if date.startswith(f'2023-{month}')}
-        
-        # Extract day labels and energy values
-        day_labels = list(range(1, len(month_data) + 1))
-        energy_values = list(month_data.values())
+            # Get the month abbreviation
+            month_abbrv = month_abbr[int(month)]
 
-        # Get the month abbreviation
-        month_abbrv = month_abbr[int(month)]
+            # Create a monthly entry
+            monthly_entry = {
+                'title': month_abbrv,
+                'label': day_labels,
+                'energy': energy_values
+            }
 
-        # Create a monthly entry
-        monthly_entry = {
-            'title': month_abbrv,
-            'label': day_labels,
-            'energy': energy_values
-        }
+            # Append the entry to the result list
+            monthly_data.append(monthly_entry)
 
-        # Append the entry to the result list
-        monthly_data.append(monthly_entry)
-
-    return monthly_data
+        return monthly_data
+    except ValueError:
+            raise ValueError("Invalid date format")
+    except IndexError:
+        raise ValueError("Invalid date format")
 
 def convert_to_yearly_energy_format(data):
-    current_year = datetime.now().year
-    monthly_data = [[0] * 12 for _ in range(current_year - min(map(lambda x: int(x[:4]), data.keys())) + 1)]
+    if not data:
+        return []  # Return an empty list if no data is passed
+    try:    
+        current_year = datetime.now().year
+        monthly_data = [[0] * 12 for _ in range(current_year - min(map(lambda x: int(x[:4]), data.keys())) + 1)]
 
-    for date, value in data.items():
-        year, month, _ = map(int, date.split('-'))
-        year_index = current_year - year
-        if 0 <= year_index < len(monthly_data):
-            monthly_data[year_index][month - 1] += value
+        for date, value in data.items():
+            year, month, _ = map(int, date.split('-'))
+            year_index = current_year - year
+            if 0 <= year_index < len(monthly_data):
+                monthly_data[year_index][month - 1] += value
 
-    # Extract unique month names from the data
-    unique_month_names = sorted(set(date.split('-')[1] for date in data.keys()), key=lambda x: int(x))
-    labels = [month_abbr[int(month)] for month in unique_month_names]
+        # Extract unique month names from the data
+        unique_month_names = sorted(set(date.split('-')[1] for date in data.keys()), key=lambda x: int(x))
+        labels = [month_abbr[int(month)] for month in unique_month_names]
 
-    yearly_data = [
-        {
-            'title': f'Year {current_year - i}',
-            'label': labels,
-            'energy': month_values
-        }
-        for i, month_values in enumerate(monthly_data)
-    ]
+        yearly_data = [
+            {
+                'title': f'Year {current_year - i}',
+                'label': labels,
+                'energy': month_values
+            }
+            for i, month_values in enumerate(monthly_data)
+        ]
 
-    return yearly_data
-# ____________________________________________________________________________________________________________________________________
+        return yearly_data
+    except ValueError:
+            raise ValueError("Invalid date format")
+    except IndexError:
+        raise ValueError("Invalid date format")
 
-def convert_to_total_weekly_energy_format(data):
-    # Convert date strings to datetime objects
-    formatted_data = {datetime.strptime(date_str, '%Y-%m-%d').date(): values for date_str, values in data.items()}
-
-    # Sort the data by date in ascending order
-    sorted_data = sorted(formatted_data.items(), key=lambda x: x[0])
-
-    # Initialize result list
-    result_list = []
-
-    # Group the data into weeks
-    week_data = defaultdict(list)
-    current_week_start = None
-
-    for date, values in sorted_data:
-        if not current_week_start:
-            current_week_start = date
-
-        week_data[current_week_start].append(values)
-
-        if date.weekday() == 6:  # Sunday
-            current_week_start = None
-
-    # Generate the final result
-    for i, (week_start, week_values) in enumerate(reversed(list(week_data.items()))):
-        if i == 0:
-            week_title = "This Week"
-        else:
-            week_title = f"{(datetime.now().date() - week_start).days // 7 } week(s) ago"
-
-        energy_values = defaultdict(list)
-
-        # Ensure the week starts from Monday and fill missing days with zeros
-        for day_values in week_values:
-            current_day = day_values['day']
-            energy_values[current_day].append(day_values['energy'])
-
-        # Fill missing days with zeros
-        for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']:
-            if day not in energy_values:
-                energy_values[day] = [0]
-
-        result_list.append({
-            'title': week_title,
-            'label': list(energy_values.keys()),
-            'energy': [sum(values) / len(values) if values else 0 for values in energy_values.values()]
-        })
-
-    return result_list
 # _____________________________________________________________________________________________________________________________________
 
 def get_appliance_daily_energy(user_id, appliance_id):
@@ -227,7 +193,6 @@ def get_room_daily_energy(user_id, room_id):
     except DoesNotExist:
         return make_response(jsonify({'message': 'User or Room not found'}), 404)
 
-
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}), 500)
@@ -237,7 +202,7 @@ def get_total_daily_energy(user_id):
     try:
         # Get user 
         user = User.objects.get(id=user_id, is_deleted=False)
-        if not user:
+        if user is None:
             return make_response(jsonify({'message': 'User not found.'}), 404)
         
         # Filter out deleted appliances
@@ -330,8 +295,14 @@ def get_room_weekly_energy(user_id, room_id):
         # CURRENT_DATE energy is taken from the appliance document
         today_energy=0.0
         for appliance_id in room.appliances:
-            appliance = next((app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted), None)
-            today_energy += appliance.energy
+            appliance = next(
+                (app for app in user.appliances if str(app._id) == str(appliance_id) and not app.is_deleted),
+                None
+            )
+            if appliance is not None:
+                today_energy += appliance.energy
+            else:
+                today_energy += 0  # Set to 0 if appliance is not found
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = {'day': CURRENT_DATE.strftime('%a'), 'energy': today_energy}
 
 
@@ -411,7 +382,7 @@ def get_total_weekly_energy(user_id):
         return make_response(jsonify(weekly_energy_data), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
@@ -450,7 +421,6 @@ def get_appliance_monthly_energy(user_id, appliance_id):
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
         
-
         # Create the response data
         response_data = {
             'appliance_id': str(appliance._id),
@@ -472,7 +442,7 @@ def get_room_monthly_energy(user_id,room_id):
         # Get user and room
         user = User.objects.get(id=user_id, is_deleted=False)
         room = Room.objects.get(id=room_id)
-        if not user or not room:
+        if user is None or room is None:
             message = 'User not found.' if not room else 'Room not found.'
             return make_response(jsonify({'message': message}), 404)
 
@@ -571,8 +541,8 @@ def get_total_monthly_energy(user_id):
         return make_response(jsonify(monthly_energy_data), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
-
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
+    
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
@@ -611,6 +581,7 @@ def get_appliance_yearly_energy(user_id, appliance_id):
 
         # CURRENT_DATE energy is taken from the appliance document
         result[CURRENT_DATE.strftime('%Y-%m-%d')] = appliance.energy
+        print(result)
         
         # Create the response data
         response_data = {
@@ -742,7 +713,7 @@ def get_total_yearly_energy(user_id):
         return make_response(jsonify(yearly_energy_data), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
 
     except Exception as e:
         traceback.print_exc()
@@ -757,8 +728,6 @@ def get_past_month_energy(user_id):
             return make_response(jsonify({'message': message}), 404)
 
         appliances = [app for app in user.appliances if not app.is_deleted]
-        
-        
         
         # Calculate the first day of the current month
         first_day_of_current_month = CURRENT_DATE.replace(day=1)
@@ -783,8 +752,7 @@ def get_past_month_energy(user_id):
         return make_response(jsonify(total_energy), 200)
 
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
-
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
@@ -804,8 +772,7 @@ def get_current_month_energy(user_id):
             total_energy += appliance.energy
         return make_response(jsonify(total_energy), 200)
     except DoesNotExist:
-        return False, jsonify({'message': 'User not found'}), 404
-
+        return make_response(jsonify({'message': 'User or Appliance not found'}), 404)
     except Exception as e:
         traceback.print_exc()
         return make_response(jsonify({'error': f"An error occurred while calculating energy consumption: {str(e)}"}))
