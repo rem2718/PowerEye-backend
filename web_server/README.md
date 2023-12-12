@@ -18,7 +18,7 @@ This server hosts the user interface, handles HTTP requests through RESTful APIs
 
 ## Thank You!
 Hope you enjoy this implementation :)
-For more detailed information about the whole system you can check _Report.pdf_.
+For more detailed information about the whole system you can check _CS499 Report.pdf_.
 
 Made by:
 
